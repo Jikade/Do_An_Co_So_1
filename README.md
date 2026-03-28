@@ -1,2 +1,2 @@
-# -n-C-S-1
+# Đồ Sát Cơ Sở
 Thành viên: Khoa, Hiếu, Nam
