@@ -64,7 +64,10 @@ export const translations = {
     dashboard: 'Bảng điều khiển',
     nowPlaying: 'Đang phát',
     discover: 'Khám phá',
+<<<<<<< HEAD
     library: 'Thu vien',
+=======
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     recommendations: 'Đề xuất',
     history: 'Lịch sử',
     analytics: 'Phân tích',
@@ -156,7 +159,10 @@ export const translations = {
     dashboard: 'Dashboard',
     nowPlaying: 'Now Playing',
     discover: 'Discover',
+<<<<<<< HEAD
     library: 'Library',
+=======
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     recommendations: 'Recommendations',
     history: 'History',
     analytics: 'Analytics',
@@ -288,9 +294,12 @@ export const themePalette: Record<SongTheme, { primary: string; secondary: strin
 
 const taoLoiVi = (moc: string[]) => moc
 const taoLoiEn = (moc: string[]) => moc
+<<<<<<< HEAD
 const taoTaiNguyenCongKhai = (thuMuc: 'img' | 'audio', tenFile: string) => `/${thuMuc}/${encodeURI(tenFile)}`
 const anh = (tenFile: string) => taoTaiNguyenCongKhai('img', tenFile)
 const nhac = (tenFile: string) => taoTaiNguyenCongKhai('audio', tenFile)
+=======
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
 
 const taoBaiHat = (duLieu: Omit<Song, 'palette'>): Song => ({
   ...duLieu,
@@ -305,8 +314,13 @@ export const mockSongs: Song[] = [
     album: 'Square Two',
     duration: 214,
     theme: 'pink',
+<<<<<<< HEAD
     coverUrl: anh('as-if-your.png'),
     audioUrl: nhac(`(20) BLACKPINK - '마지막처럼 (AS IF IT'S YOUR LAST)' M-V - YouTube.mp3`),
+=======
+    coverUrl: '/anh/as-if-its-your-last.jpg',
+    audioUrl: '/nhac/as-if-its-your-last.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'happy',
     mood: 'happy',
     lyricsVi: taoLoiVi([
@@ -334,8 +348,13 @@ export const mockSongs: Song[] = [
     album: 'LALISA Era',
     duration: 198,
     theme: 'violet',
+<<<<<<< HEAD
     coverUrl: anh('dream.png'),
     audioUrl: nhac('(20) LISA - DREAM feat. Kentaro Sakaguchi (Official Short Film MV) - YouTube.mp3'),
+=======
+    coverUrl: '/anh/dream-lisa.jpg',
+    audioUrl: '/nhac/dream-lisa.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'romantic',
     mood: 'romantic',
     lyricsVi: taoLoiVi([
@@ -363,8 +382,13 @@ export const mockSongs: Song[] = [
     album: 'The Album',
     duration: 181,
     theme: 'red',
+<<<<<<< HEAD
     coverUrl: anh('how-you-like.png'),
     audioUrl: nhac(`(20) BLACKPINK - 'How You Like That' M-V - YouTube.mp3`),
+=======
+    coverUrl: '/anh/how-you-like-that.jpg',
+    audioUrl: '/nhac/how-you-like-that.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'energetic',
     mood: 'energetic',
     lyricsVi: taoLoiVi([
@@ -392,8 +416,13 @@ export const mockSongs: Song[] = [
     album: 'SS Remix Collection',
     duration: 245,
     theme: 'sepia',
+<<<<<<< HEAD
     coverUrl: anh('anhvui.png'),
     audioUrl: nhac('(20) Anh Vui x Địa Ngục Trần Gian (SS Remix) - Phạm Kỳ - Những Cánh Hoa Rơi - Anh Vui Đến Nỗi Nghẹn Ngào - YouTube.mp3'),
+=======
+    coverUrl: '/anh/anh-vui-dia-nguc-tran-gian.jpg',
+    audioUrl: '/nhac/anh-vui-dia-nguc-tran-gian.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'nostalgic',
     mood: 'nostalgic',
     lyricsVi: taoLoiVi([
@@ -421,8 +450,13 @@ export const mockSongs: Song[] = [
     album: 'Acoustic Session',
     duration: 232,
     theme: 'blue',
+<<<<<<< HEAD
     coverUrl: anh('bai-hat-nay.png'),
     audioUrl: nhac('(20) T.R.I - một bài hát không vui mấy (sad ver.) l OFFICIAL VISUALIZER - YouTube.mp3'),
+=======
+    coverUrl: '/anh/nhung-canh-hoa-roi.jpg',
+    audioUrl: '/nhac/nhung-canh-hoa-roi.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'sad',
     mood: 'sad',
     lyricsVi: taoLoiVi([
@@ -450,8 +484,13 @@ export const mockSongs: Song[] = [
     album: 'Chromatic Dreams',
     duration: 214,
     theme: 'pink',
+<<<<<<< HEAD
     coverUrl: anh('go.png'),
     audioUrl: nhac('(20) BLACKPINK - GO M-V - YouTube.mp3'),
+=======
+    coverUrl: '/anh/pink-sunset-rush.jpg',
+    audioUrl: '/nhac/pink-sunset-rush.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'happy',
     mood: 'happy',
     lyricsVi: taoLoiVi([
@@ -479,8 +518,13 @@ export const mockSongs: Song[] = [
     album: 'Ocean Depths',
     duration: 256,
     theme: 'blue',
+<<<<<<< HEAD
     coverUrl: anh('nhung-loi-hua-bo-quen.png'),
     audioUrl: nhac('(20) NHỮNG LỜI HỨA BỎ QUÊN - VŨ. x DEAR JANE (Official MV) tư Album -Bao Tang Cua Nuôi Tiêc- - YouTube.mp3'),
+=======
+    coverUrl: '/anh/blue-after-rain.jpg',
+    audioUrl: '/nhac/blue-after-rain.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'sad',
     mood: 'sad',
     lyricsVi: taoLoiVi([
@@ -508,8 +552,13 @@ export const mockSongs: Song[] = [
     album: 'Chromatic Dreams',
     duration: 203,
     theme: 'pink',
+<<<<<<< HEAD
     coverUrl: anh('yeu-la-tha-thu.png'),
     audioUrl: nhac('(20) Yêu là -Tha Thu- - Only C - Em Chưa 18 OST - Lyric + vietsub - [PNAK Release] - YouTube.mp3'),
+=======
+    coverUrl: '/anh/rose-garden.jpg',
+    audioUrl: '/nhac/rose-garden.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'romantic',
     mood: 'romantic',
     lyricsVi: taoLoiVi([
@@ -537,8 +586,13 @@ export const mockSongs: Song[] = [
     album: 'Electric Sky',
     duration: 176,
     theme: 'red',
+<<<<<<< HEAD
     coverUrl: anh('laviai.png'),
     audioUrl: nhac('(20) WXRDIE - LAVIAI (REMIX) ft. HIEUTHUHAI & 2PILLZ - YouTube.mp3'),
+=======
+    coverUrl: '/anh/storm-chaser.jpg',
+    audioUrl: '/nhac/storm-chaser.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'energetic',
     mood: 'energetic',
     lyricsVi: taoLoiVi([
@@ -566,8 +620,13 @@ export const mockSongs: Song[] = [
     album: 'Shadows Dance',
     duration: 289,
     theme: 'violet',
+<<<<<<< HEAD
     coverUrl: anh('mot-trieu-kha-nang.png'),
     audioUrl: nhac('(20) [Vietsub + Kara] Một triệu khả năng - Trương Hàm Vận - 一百万个可能 张含韵 - YouTube.mp3'),
+=======
+    coverUrl: '/anh/velvet-night.jpg',
+    audioUrl: '/nhac/velvet-night.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'calm',
     mood: 'calm',
     lyricsVi: taoLoiVi([
@@ -595,8 +654,13 @@ export const mockSongs: Song[] = [
     album: 'Golden Hour',
     duration: 234,
     theme: 'sepia',
+<<<<<<< HEAD
     coverUrl: anh('maigc-in-the-air.png'),
     audioUrl: nhac('(20) MAGIC SYSTEM - Magic In The Air Feat. Chawki [Clip Officiel] - YouTube.mp3'),
+=======
+    coverUrl: '/anh/summer-wine.jpg',
+    audioUrl: '/nhac/summer-wine.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'happy',
     mood: 'happy',
     lyricsVi: taoLoiVi([
@@ -624,8 +688,13 @@ export const mockSongs: Song[] = [
     album: 'Passion Play',
     duration: 267,
     theme: 'red',
+<<<<<<< HEAD
     coverUrl: anh('chiu-cach-minh.png'),
     audioUrl: nhac('(20) RHYDER - CHỊU CÁCH MÌNH NÓI THUA - ft. BAN x COOLKID - OFFICIAL MUSIC VIDEO - YouTube.mp3'),
+=======
+    coverUrl: '/anh/scarlet-dreams.jpg',
+    audioUrl: '/nhac/scarlet-dreams.mp3',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     emotion: 'romantic',
     mood: 'romantic',
     lyricsVi: taoLoiVi([
@@ -653,7 +722,11 @@ export const mockPlaylists: Playlist[] = [
     id: 'pl1',
     name: { vi: 'Kpop Vui Ve', en: 'Happy Kpop' },
     description: { vi: 'Nhung bai nhac bat tai de nghe luc vui ve', en: 'High energy songs for a happy mood' },
+<<<<<<< HEAD
     coverUrl: anh('as-if-your.png'),
+=======
+    coverUrl: '/anh/playlist-vui-ve.jpg',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     songCount: 24,
     duration: '1h 32m',
     theme: 'pink',
@@ -665,7 +738,11 @@ export const mockPlaylists: Playlist[] = [
     id: 'pl2',
     name: { vi: 'Dem Lang Man', en: 'Romantic Night' },
     description: { vi: 'Goi y danh cho luc muon nghe nhac tinh cam', en: 'Late night romantic mood' },
+<<<<<<< HEAD
     coverUrl: anh('dream.png'),
+=======
+    coverUrl: '/anh/playlist-lang-man.jpg',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     songCount: 18,
     duration: '1h 15m',
     theme: 'violet',
@@ -677,7 +754,11 @@ export const mockPlaylists: Playlist[] = [
     id: 'pl3',
     name: { vi: 'Sau Con Mua', en: 'After Rain' },
     description: { vi: 'Nhac nhe cho luc can ngoi yen', en: 'Gentle songs for a quiet mood' },
+<<<<<<< HEAD
     coverUrl: anh('nhung-loi-hua-bo-quen.png'),
+=======
+    coverUrl: '/anh/playlist-sau-con-mua.jpg',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     songCount: 16,
     duration: '58m',
     theme: 'blue',
@@ -689,7 +770,11 @@ export const mockPlaylists: Playlist[] = [
     id: 'pl4',
     name: { vi: 'Bung No Nang Luong', en: 'Energy Burst' },
     description: { vi: 'Nhac manh de tap trung va van dong', en: 'Power tracks for action' },
+<<<<<<< HEAD
     coverUrl: anh('how-you-like.png'),
+=======
+    coverUrl: '/anh/playlist-nang-luong.jpg',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     songCount: 20,
     duration: '1h 08m',
     theme: 'red',
@@ -701,7 +786,11 @@ export const mockPlaylists: Playlist[] = [
     id: 'pl5',
     name: { vi: 'Ky Uc Mua Cu', en: 'Old Memories' },
     description: { vi: 'Nhac cho nhung luc can mot chut hoai niem', en: 'Soft nostalgic tracks' },
+<<<<<<< HEAD
     coverUrl: anh('anhvui.png'),
+=======
+    coverUrl: '/anh/playlist-hoai-niem.jpg',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     songCount: 22,
     duration: '1h 24m',
     theme: 'sepia',
@@ -713,7 +802,11 @@ export const mockPlaylists: Playlist[] = [
     id: 'pl6',
     name: { vi: 'Thu Gian Ban Dem', en: 'Midnight Calm' },
     description: { vi: 'Giai dieu de nghi ngoi va thu thai', en: 'Calm and relaxing tracks' },
+<<<<<<< HEAD
     coverUrl: anh('mot-trieu-kha-nang.png'),
+=======
+    coverUrl: '/anh/playlist-thu-gian.jpg',
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     songCount: 30,
     duration: '2h 10m',
     theme: 'cyan',
@@ -752,11 +845,19 @@ export const mockGenres: MockGenre[] = [
 ]
 
 export const mockArtists: MockArtist[] = [
+<<<<<<< HEAD
   { id: 'a1', name: 'BLACKPINK', imageUrl: anh('as-if-your.png'), followers: '96M' },
   { id: 'a2', name: 'LISA', imageUrl: anh('dream.png'), followers: '104M' },
   { id: 'a3', name: 'Pham Ky', imageUrl: anh('anhvui.png'), followers: '1.5M' },
   { id: 'a4', name: 'Luna Nova', imageUrl: anh('go.png'), followers: '540K' },
   { id: 'a5', name: 'Midnight Echo', imageUrl: anh('mot-trieu-kha-nang.png'), followers: '420K' },
+=======
+  { id: 'a1', name: 'BLACKPINK', imageUrl: '/anh/nghe-si-blackpink.jpg', followers: '96M' },
+  { id: 'a2', name: 'LISA', imageUrl: '/anh/nghe-si-lisa.jpg', followers: '104M' },
+  { id: 'a3', name: 'Pham Ky', imageUrl: '/anh/nghe-si-pham-ky.jpg', followers: '1.5M' },
+  { id: 'a4', name: 'Luna Nova', imageUrl: '/placeholder-user.jpg', followers: '540K' },
+  { id: 'a5', name: 'Midnight Echo', imageUrl: '/placeholder-user.jpg', followers: '420K' },
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
 ]
 
 export const mockHistoryRecords: HistoryRecord[] = [

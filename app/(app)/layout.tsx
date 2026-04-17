@@ -4,14 +4,18 @@ import { AppSidebar } from '@/components/thanhBenUngDung';
 import { AppHeader } from '@/components/dauTrangUngDung';
 import { MiniPlayer } from '@/components/trinhPhatNho';
 import { MobileNav } from '@/components/dieuHuongDiDong';
+<<<<<<< HEAD
 import { AIAssistantPanel } from '@/components/troLyAI';
 import { useTheme } from '@/lib/nguCanhGiaoDien';
+=======
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
 
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+<<<<<<< HEAD
   const { isSidebarCollapsed } = useTheme();
 
   return (
@@ -42,6 +46,18 @@ export default function AppLayout({
       </div>
       <MobileNav />
       <AIAssistantPanel />
+=======
+  return (
+    <div className="min-h-screen bg-background ambient-gradient">
+      <AppSidebar />
+      <div className="md:pl-64">
+        <AppHeader />
+        <main className="pb-40 md:pb-24">
+          {children}
+        </main>
+      </div>
+      <MobileNav />
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
       <MiniPlayer />
     </div>
   );

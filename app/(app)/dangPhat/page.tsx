@@ -68,8 +68,13 @@ export default function NowPlayingPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/85 to-background" />
       </div>
 
+<<<<<<< HEAD
       <div className="relative z-10 pb-32 pt-4">
         <div className="mx-auto max-w-6xl">
+=======
+      <div className="relative z-10 p-4 md:p-6">
+        <div className="max-w-6xl mx-auto">
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
           <div className="flex items-center justify-between mb-6 md:hidden">
             <button className="p-2"><ChevronDown className="w-6 h-6 text-foreground" /></button>
             <span className="text-sm font-medium text-foreground">{t('nowPlaying')}</span>
@@ -110,7 +115,11 @@ export default function NowPlayingPage() {
                 <button onClick={playPrevious} className="p-3 rounded-full text-foreground hover:bg-secondary/50 transition-colors">
                   <SkipBack className="w-6 h-6 fill-current" />
                 </button>
+<<<<<<< HEAD
                 <button onClick={togglePlayPause} className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--brand-accent)] text-[#06120a] shadow-[0_20px_40px_rgba(30,215,96,0.24)] transition-transform hover:scale-105 md:h-20 md:w-20">
+=======
+                <button onClick={togglePlayPause} className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-foreground text-background flex items-center justify-center hover:scale-105 transition-transform shadow-xl">
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
                   {isPlaying ? <Pause className="w-8 h-8 md:w-10 md:h-10" /> : <Play className="w-8 h-8 md:w-10 md:h-10 fill-current ml-1" />}
                 </button>
                 <button onClick={playNext} className="p-3 rounded-full text-foreground hover:bg-secondary/50 transition-colors">
@@ -201,8 +210,13 @@ export default function NowPlayingPage() {
                 <span className="text-sm font-medium text-foreground block mb-2">{language === 'vi' ? 'Hiệu ứng cảm xúc' : 'Emotion Effect'}</span>
                 <p className="text-xs text-muted-foreground mb-3">
                   {language === 'vi'
+<<<<<<< HEAD
                     ? `File nhạc hiện đang lấy từ ${currentSong.audioUrl}. Chỉ cần đặt audio vào public/audio và ảnh bìa vào public/img là ứng dụng sẽ tự nhận.`
                     : `The current audio is loaded from ${currentSong.audioUrl}. Keep audio in public/audio and cover art in public/img and the app will pick them up.`}
+=======
+                    ? `File nhạc hiện đang lấy từ ${currentSong.audioUrl}. Bạn chỉ cần bỏ đúng mp3 vào thư mục public/nhac là chạy.`
+                    : `The current audio is loaded from ${currentSong.audioUrl}. Put the correct mp3 inside public/nhac and it will play.`}
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
                 </p>
                 <MoodBadge emotion={currentEmotion} size="md" animated />
               </div>

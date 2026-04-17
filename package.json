@@ -3,13 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+<<<<<<< HEAD
     "dev": "next dev --webpack",
     "build": "next build --webpack",
+=======
+    "dev": "next dev",
+    "build": "next build",
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     "start": "next start",
     "lint": "eslint ."
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
+<<<<<<< HEAD
+=======
+    "@vercel/analytics": "1.6.1",
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     "@radix-ui/react-accordion": "1.2.12",
     "@radix-ui/react-alert-dialog": "1.1.15",
     "@radix-ui/react-aspect-ratio": "1.1.8",
@@ -37,14 +46,20 @@
     "@radix-ui/react-toggle": "1.1.10",
     "@radix-ui/react-toggle-group": "1.1.11",
     "@radix-ui/react-tooltip": "1.2.8",
+<<<<<<< HEAD
     "@vercel/analytics": "1.6.1",
+=======
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.1.1",
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.6.0",
+<<<<<<< HEAD
     "gsap": "^3.15.0",
+=======
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     "input-otp": "1.4.2",
     "lucide-react": "^0.564.0",
     "next": "16.1.6",

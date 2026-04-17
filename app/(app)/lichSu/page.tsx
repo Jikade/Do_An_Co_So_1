@@ -68,6 +68,7 @@ export default function HistoryPage() {
   }
 
   return (
+<<<<<<< HEAD
     <div className="pb-32">
       <div className="mx-auto max-w-7xl space-y-8">
         {/* Header */}
@@ -76,6 +77,15 @@ export default function HistoryPage() {
             <p className="text-[0.68rem] uppercase tracking-[0.28em] text-white/35">History</p>
             <h1 className="mt-4 text-3xl font-bold text-white">{t.history}</h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-white/62">
+=======
+    <div className="min-h-screen p-6 pb-32">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">{t.history}</h1>
+            <p className="text-muted-foreground mt-1">
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
               {language === "vi" 
                 ? "Xem lại hành trình âm nhạc và cảm xúc của bạn"
                 : "Review your music and emotion journey"}
