@@ -1,28 +1,74 @@
+<<<<<<< HEAD
 version: "3"
 
 services:
 
   db:
     image: postgres
+=======
+services:
+  db:
+    image: postgres:15
+    container_name: emotion_music_db
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: emotion_music
     ports:
       - "5432:5432"
+<<<<<<< HEAD
+=======
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
 
   api:
     build:
       context: ..
       dockerfile: infra/Dockerfile.api
+<<<<<<< HEAD
     ports:
       - "8000:8000"
     depends_on:
       - db
+=======
+    container_name: emotion_music_api
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/emotion_music
+      JWT_SECRET: super-secret-key
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 720
+      ML_SERVICE_URL: http://ml:8001
+      REQUEST_TIMEOUT_SECONDS: 10
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../data/mp3:/data/mp3
+    depends_on:
+      - db
+      - ml
+    command: >
+      sh -c "until python -c 'import psycopg2; psycopg2.connect(\"postgresql://postgres:postgres@db:5432/emotion_music\").close()'; do
+               echo 'Waiting for database...';
+               sleep 2;
+             done;
+             alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
 
   ml:
     build:
       context: ..
       dockerfile: infra/Dockerfile.ml
+<<<<<<< HEAD
     ports:
       - "8001:8001"
+=======
+    container_name: emotion_music_ml
+    ports:
+      - "8001:8001"
+
+volumes:
+  postgres_data:
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532

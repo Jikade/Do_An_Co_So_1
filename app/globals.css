@@ -5,6 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+<<<<<<< HEAD
   --background: #0b0d0f;
   --foreground: #ffffff;
   --card: #121416;
@@ -54,11 +55,58 @@
   --song-glow: rgba(124, 141, 255, 0.32);
   --song-gradient-start: rgba(124, 141, 255, 0.18);
   --song-gradient-end: rgba(18, 18, 18, 0);
+=======
+  /* Base dark theme for MoodSync AI */
+  --background: oklch(0.08 0.01 270);
+  --foreground: oklch(0.95 0.01 270);
+  --card: oklch(0.12 0.015 270);
+  --card-foreground: oklch(0.95 0.01 270);
+  --popover: oklch(0.1 0.015 270);
+  --popover-foreground: oklch(0.95 0.01 270);
+  --primary: oklch(0.75 0.18 350);
+  --primary-foreground: oklch(0.98 0.01 270);
+  --secondary: oklch(0.18 0.02 270);
+  --secondary-foreground: oklch(0.9 0.01 270);
+  --muted: oklch(0.2 0.015 270);
+  --muted-foreground: oklch(0.65 0.02 270);
+  --accent: oklch(0.7 0.15 330);
+  --accent-foreground: oklch(0.98 0.01 270);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 270);
+  --border: oklch(0.25 0.02 270);
+  --input: oklch(0.18 0.02 270);
+  --ring: oklch(0.75 0.18 350);
+  --chart-1: oklch(0.75 0.18 350);
+  --chart-2: oklch(0.7 0.15 200);
+  --chart-3: oklch(0.65 0.12 150);
+  --chart-4: oklch(0.8 0.15 80);
+  --chart-5: oklch(0.7 0.2 280);
+  --radius: 1rem;
+  --sidebar: oklch(0.06 0.01 270);
+  --sidebar-foreground: oklch(0.95 0.01 270);
+  --sidebar-primary: oklch(0.75 0.18 350);
+  --sidebar-primary-foreground: oklch(0.98 0.01 270);
+  --sidebar-accent: oklch(0.15 0.02 270);
+  --sidebar-accent-foreground: oklch(0.9 0.01 270);
+  --sidebar-border: oklch(0.2 0.02 270);
+  --sidebar-ring: oklch(0.75 0.18 350);
+  
+  /* Dynamic song theme CSS variables */
+  --song-primary: oklch(0.75 0.18 350);
+  --song-secondary: oklch(0.6 0.15 350);
+  --song-accent: oklch(0.85 0.12 350);
+  --song-glow: oklch(0.75 0.18 350 / 0.3);
+  --song-gradient-start: oklch(0.75 0.18 350 / 0.15);
+  --song-gradient-end: oklch(0.08 0.01 270);
+  
+  /* Emotion intensity modifiers */
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
   --emotion-brightness: 1;
   --emotion-saturation: 1;
 }
 
 .dark {
+<<<<<<< HEAD
   --background: #0b0d0f;
   --foreground: #ffffff;
   --card: #121416;
@@ -190,6 +238,139 @@
     'Hiragino Kaku Gothic ProN',
     'Meiryo',
     sans-serif;
+=======
+  --background: oklch(0.08 0.01 270);
+  --foreground: oklch(0.95 0.01 270);
+  --card: oklch(0.12 0.015 270);
+  --card-foreground: oklch(0.95 0.01 270);
+  --popover: oklch(0.1 0.015 270);
+  --popover-foreground: oklch(0.95 0.01 270);
+  --primary: oklch(0.75 0.18 350);
+  --primary-foreground: oklch(0.98 0.01 270);
+  --secondary: oklch(0.18 0.02 270);
+  --secondary-foreground: oklch(0.9 0.01 270);
+  --muted: oklch(0.2 0.015 270);
+  --muted-foreground: oklch(0.65 0.02 270);
+  --accent: oklch(0.7 0.15 330);
+  --accent-foreground: oklch(0.98 0.01 270);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 270);
+  --border: oklch(0.25 0.02 270);
+  --input: oklch(0.18 0.02 270);
+  --ring: oklch(0.75 0.18 350);
+  --chart-1: oklch(0.75 0.18 350);
+  --chart-2: oklch(0.7 0.15 200);
+  --chart-3: oklch(0.65 0.12 150);
+  --chart-4: oklch(0.8 0.15 80);
+  --chart-5: oklch(0.7 0.2 280);
+  --sidebar: oklch(0.06 0.01 270);
+  --sidebar-foreground: oklch(0.95 0.01 270);
+  --sidebar-primary: oklch(0.75 0.18 350);
+  --sidebar-primary-foreground: oklch(0.98 0.01 270);
+  --sidebar-accent: oklch(0.15 0.02 270);
+  --sidebar-accent-foreground: oklch(0.9 0.01 270);
+  --sidebar-border: oklch(0.2 0.02 270);
+  --sidebar-ring: oklch(0.75 0.18 350);
+}
+
+/* Song theme variants */
+[data-song-theme="pink"] {
+  --song-primary: oklch(0.75 0.18 350);
+  --song-secondary: oklch(0.6 0.15 350);
+  --song-accent: oklch(0.85 0.12 10);
+  --song-glow: oklch(0.75 0.18 350 / 0.4);
+  --song-gradient-start: oklch(0.75 0.18 350 / 0.2);
+  --song-gradient-end: oklch(0.08 0.01 270);
+}
+
+[data-song-theme="red"] {
+  --song-primary: oklch(0.6 0.25 25);
+  --song-secondary: oklch(0.5 0.2 25);
+  --song-accent: oklch(0.8 0.15 40);
+  --song-glow: oklch(0.6 0.25 25 / 0.4);
+  --song-gradient-start: oklch(0.6 0.25 25 / 0.2);
+  --song-gradient-end: oklch(0.08 0.01 270);
+}
+
+[data-song-theme="blue"] {
+  --song-primary: oklch(0.6 0.15 250);
+  --song-secondary: oklch(0.5 0.12 250);
+  --song-accent: oklch(0.75 0.1 280);
+  --song-glow: oklch(0.6 0.15 250 / 0.4);
+  --song-gradient-start: oklch(0.6 0.15 250 / 0.2);
+  --song-gradient-end: oklch(0.08 0.01 270);
+}
+
+[data-song-theme="green"] {
+  --song-primary: oklch(0.65 0.15 170);
+  --song-secondary: oklch(0.55 0.12 170);
+  --song-accent: oklch(0.75 0.1 150);
+  --song-glow: oklch(0.65 0.15 170 / 0.4);
+  --song-gradient-start: oklch(0.65 0.15 170 / 0.2);
+  --song-gradient-end: oklch(0.08 0.01 270);
+}
+
+[data-song-theme="violet"] {
+  --song-primary: oklch(0.6 0.2 300);
+  --song-secondary: oklch(0.5 0.18 300);
+  --song-accent: oklch(0.75 0.12 320);
+  --song-glow: oklch(0.6 0.2 300 / 0.4);
+  --song-gradient-start: oklch(0.6 0.2 300 / 0.2);
+  --song-gradient-end: oklch(0.08 0.01 270);
+}
+
+[data-song-theme="sepia"] {
+  --song-primary: oklch(0.65 0.1 70);
+  --song-secondary: oklch(0.55 0.08 70);
+  --song-accent: oklch(0.75 0.08 50);
+  --song-glow: oklch(0.65 0.1 70 / 0.4);
+  --song-gradient-start: oklch(0.65 0.1 70 / 0.2);
+  --song-gradient-end: oklch(0.08 0.01 270);
+}
+
+[data-song-theme="cyan"] {
+  --song-primary: oklch(0.7 0.12 200);
+  --song-secondary: oklch(0.6 0.1 200);
+  --song-accent: oklch(0.8 0.08 180);
+  --song-glow: oklch(0.7 0.12 200 / 0.4);
+  --song-gradient-start: oklch(0.7 0.12 200 / 0.2);
+  --song-gradient-end: oklch(0.08 0.01 270);
+}
+
+/* Emotion intensity variants */
+[data-emotion="happy"] {
+  --emotion-brightness: 1.1;
+  --emotion-saturation: 1.15;
+}
+
+[data-emotion="sad"] {
+  --emotion-brightness: 0.85;
+  --emotion-saturation: 0.8;
+}
+
+[data-emotion="calm"] {
+  --emotion-brightness: 0.95;
+  --emotion-saturation: 0.85;
+}
+
+[data-emotion="energetic"] {
+  --emotion-brightness: 1.15;
+  --emotion-saturation: 1.2;
+}
+
+[data-emotion="nostalgic"] {
+  --emotion-brightness: 0.9;
+  --emotion-saturation: 0.75;
+}
+
+[data-emotion="stressed"] {
+  --emotion-brightness: 0.85;
+  --emotion-saturation: 0.7;
+}
+
+@theme inline {
+  --font-sans: 'Inter', 'Geist', 'Geist Fallback', sans-serif;
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
   --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -215,12 +396,21 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+<<<<<<< HEAD
   --radius-sm: calc(var(--radius) - 8px);
   --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 6px);
   --radius-2xl: calc(var(--radius) + 12px);
   --radius-3xl: calc(var(--radius) + 20px);
+=======
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 16px);
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -239,6 +429,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+<<<<<<< HEAD
 
   html {
     background: var(--background);
@@ -515,6 +706,44 @@
   text-wrap: balance;
 }
 
+=======
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Glassmorphism utilities */
+.glass {
+  @apply bg-card/60 backdrop-blur-xl border border-border/50;
+}
+
+.glass-strong {
+  @apply bg-card/80 backdrop-blur-2xl border border-border/60;
+}
+
+/* Glow effects */
+.glow-primary {
+  box-shadow: 0 0 40px var(--song-glow), 0 0 80px var(--song-glow);
+}
+
+.glow-soft {
+  box-shadow: 0 0 20px var(--song-glow);
+}
+
+/* Ambient gradient background */
+.ambient-gradient {
+  background: radial-gradient(ellipse at top, var(--song-gradient-start) 0%, transparent 50%),
+              radial-gradient(ellipse at bottom right, var(--song-glow) 0%, transparent 40%),
+              var(--background);
+}
+
+/* Smooth theme transitions */
+.theme-transition {
+  transition: background-color 0.8s ease, color 0.4s ease, border-color 0.6s ease, box-shadow 0.8s ease;
+}
+
+/* Premium scrollbar */
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -525,6 +754,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
+<<<<<<< HEAD
   background: rgba(255, 255, 255, 0.14);
   border-radius: 999px;
 }
@@ -543,10 +773,30 @@
   50% {
     opacity: 1;
     transform: scale(1.03);
+=======
+  background: oklch(0.3 0.02 270);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.4 0.02 270);
+}
+
+/* Animation keyframes */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
   }
 }
 
 @keyframes float {
+<<<<<<< HEAD
   0%,
   100% {
     transform: translateY(0);
@@ -554,6 +804,13 @@
 
   50% {
     transform: translateY(-8px);
+=======
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
   }
 }
 
@@ -561,12 +818,16 @@
   0% {
     background-position: -200% 0;
   }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
   100% {
     background-position: 200% 0;
   }
 }
 
+<<<<<<< HEAD
 @keyframes wave {
   0%,
   100% {
@@ -578,6 +839,8 @@
   }
 }
 
+=======
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
 .animate-pulse-glow {
   animation: pulse-glow 3s ease-in-out infinite;
 }
@@ -592,10 +855,24 @@
   animation: shimmer 2s linear infinite;
 }
 
+<<<<<<< HEAD
+=======
+/* Waveform animation */
+@keyframes wave {
+  0%, 100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
 .wave-bar {
   animation: wave 0.8s ease-in-out infinite;
 }
 
+<<<<<<< HEAD
 .wave-bar:nth-child(2) {
   animation-delay: 0.1s;
 }
@@ -611,3 +888,9 @@
 .wave-bar:nth-child(5) {
   animation-delay: 0.4s;
 }
+=======
+.wave-bar:nth-child(2) { animation-delay: 0.1s; }
+.wave-bar:nth-child(3) { animation-delay: 0.2s; }
+.wave-bar:nth-child(4) { animation-delay: 0.3s; }
+.wave-bar:nth-child(5) { animation-delay: 0.4s; }
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532

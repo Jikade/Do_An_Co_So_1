@@ -2,7 +2,11 @@
 
 import { useState } from "react"
 import Image from "next/image"
+<<<<<<< HEAD
 import { User, Palette, Music, Languages, Bell, Shield, Sliders, Link2, Save, Check, Camera, Mic, FileText, Smartphone, Monitor, Moon, Sun, Volume2, Zap, Heart, Globe, Brain, FolderSync, Database } from "lucide-react"
+=======
+import { User, Palette, Music, Languages, Bell, Shield, Sliders, Link2, Save, Check, Camera, Mic, FileText, Smartphone, Monitor, Moon, Sun, Volume2, Zap, Heart, Globe } from "lucide-react"
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -69,26 +73,42 @@ export default function SettingsPage() {
 
   const connectedServices = [
     { 
+<<<<<<< HEAD
       name: "MoodSync Cloud", 
       icon: Brain,
+=======
+      name: "Spotify", 
+      icon: "https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=40&h=40&fit=crop",
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
       connected: true,
       status: language === "vi" ? "Đã kết nối" : "Connected"
     },
     { 
+<<<<<<< HEAD
       name: "Library Sync", 
       icon: FolderSync,
+=======
+      name: "Apple Music", 
+      icon: "https://images.unsplash.com/photo-1611339555312-e607c8352fd7?w=40&h=40&fit=crop",
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
       connected: false,
       status: language === "vi" ? "Chưa kết nối" : "Not connected"
     },
     { 
+<<<<<<< HEAD
       name: "Assistant Memory", 
       icon: Database,
+=======
+      name: "YouTube Music", 
+      icon: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=40&h=40&fit=crop",
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
       connected: true,
       status: language === "vi" ? "Đã kết nối" : "Connected"
     },
   ]
 
   return (
+<<<<<<< HEAD
     <div className="pb-32">
       <div className="mx-auto max-w-5xl space-y-8">
         {/* Header */}
@@ -97,12 +117,25 @@ export default function SettingsPage() {
             <p className="text-[0.68rem] uppercase tracking-[0.28em] text-white/35">Settings</p>
             <h1 className="mt-4 text-3xl font-bold text-white">{t.settings}</h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-white/62">
+=======
+    <div className="min-h-screen p-6 pb-32">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">{t.settings}</h1>
+            <p className="text-muted-foreground mt-1">
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
               {language === "vi" 
                 ? "Quản lý tài khoản và tùy chỉnh trải nghiệm"
                 : "Manage your account and customize your experience"}
             </p>
           </div>
+<<<<<<< HEAD
           <Button onClick={handleSave} className="gap-2 rounded-full bg-[var(--brand-accent)] text-[#06120a] hover:bg-[var(--brand-accent)]/90">
+=======
+          <Button onClick={handleSave} className="gap-2">
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
             <Save className="w-4 h-4" />
             {language === "vi" ? "Lưu thay đổi" : "Save Changes"}
           </Button>
@@ -645,8 +678,19 @@ export default function SettingsPage() {
                     className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10"
                   >
                     <div className="flex items-center gap-4">
+<<<<<<< HEAD
                       <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center">
                         <service.icon className="w-6 h-6 text-white/80" />
+=======
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/10">
+                        <Image
+                          src={service.icon}
+                          alt={service.name}
+                          width={48}
+                          height={48}
+                          className="object-cover"
+                        />
+>>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
                       </div>
                       <div>
                         <p className="font-medium text-foreground">{service.name}</p>
