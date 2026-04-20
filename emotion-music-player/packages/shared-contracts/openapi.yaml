@@ -1,0 +1,13 @@
+paths:
+
+  /emotion/predict:
+    post:
+      summary: Predict emotion
+
+  /recommend:
+    post:
+      summary: Recommend tracks
+
+  /feedback:
+    post:
+      summary: Send feedback

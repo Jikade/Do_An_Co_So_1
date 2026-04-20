@@ -1,0 +1,28 @@
+version: "3"
+
+services:
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: emotion_music
+    ports:
+      - "5432:5432"
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  ml:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.ml
+    ports:
+      - "8001:8001"
