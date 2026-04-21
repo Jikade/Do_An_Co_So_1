@@ -1,0 +1,39 @@
+openapi: 3.0.3
+info:
+  title: Emotion Music Player API
+  version: 1.0.0
+
+paths:
+  /auth/register:
+    post:
+      summary: Register user
+
+  /auth/login:
+    post:
+      summary: Login and receive JWT
+
+  /users/me:
+    get:
+      summary: Get current user
+
+  /tracks:
+    get:
+      summary: List tracks
+
+  /playlists:
+    get:
+      summary: List playlists
+    post:
+      summary: Create playlist
+
+  /emotion/predict:
+    post:
+      summary: Predict emotion
+
+  /recommend:
+    post:
+      summary: Recommend tracks
+
+  /feedback:
+    post:
+      summary: Send feedback

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="nghich">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/nghich.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
