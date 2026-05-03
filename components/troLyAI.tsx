@@ -1,270 +1,284 @@
-'use client'
+'use client';
 
-import { useMemo, useState } from 'react'
-import Image from 'next/image'
-import { usePathname, useRouter } from 'next/navigation'
-import { Bot, ChevronRight, MessageSquareText, Send, WandSparkles, X } from 'lucide-react'
-import { useTheme } from '@/lib/nguCanhGiaoDien'
-import { mockSongs, type Emotion } from '@/lib/duLieuGiaLap'
-import { assistantQuickActions, detectEmotionFromText, localizedLabel, tasteProfile } from '@/lib/music-intelligence'
-import { assistantPanelCopy } from '@/lib/vietnamese-home-copy'
-import { cn } from '@/lib/tienIch'
+import { useMemo, useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Bot, ChevronRight, MessageSquareText, Send, Sparkles, Minus, X, Info, AudioLines } from 'lucide-react';
+import { useTheme } from '@/lib/nguCanhGiaoDien';
+import { mockSongs, type Emotion } from '@/lib/duLieuGiaLap';
+import { assistantQuickActions, detectEmotionFromText, localizedLabel } from '@/lib/music-intelligence';
+import { cn } from '@/lib/tienIch';
 
 interface AssistantMessage {
-  id: string
-  role: 'assistant' | 'user'
-  content: string
+  id: string;
+  role: 'assistant' | 'user' | 'system';
+  content: string;
 }
 
 const routeMap = {
   home: '/bangDieuKhien',
   emotion: '/nhanDienCamXuc',
   analytics: '/phanTich',
+  space: '/khongGian',
   recommendations: '/goiY',
   library: '/thuVien',
   history: '/lichSu',
   settings: '/caiDat',
-} as const
+} as const;
 
 const emotionNames: Record<Emotion, string> = {
-  happy: 'Vui ve',
-  sad: 'Buon',
-  calm: 'Binh yen',
-  angry: 'Tuc gian',
-  romantic: 'Lang man',
-  nostalgic: 'Hoai niem',
-  energetic: 'Nang dong',
-  stressed: 'Cang thang',
-}
+  happy: 'Vui vẻ',
+  sad: 'Buồn',
+  calm: 'Bình yên',
+  angry: 'Tức giận',
+  romantic: 'Lãng mạn',
+  nostalgic: 'Hoài niệm',
+  energetic: 'Năng động',
+  stressed: 'Căng thẳng',
+};
 
 function firstSongByEmotion(emotion: Emotion) {
-  return mockSongs.find((song) => song.emotion === emotion) ?? mockSongs[0]
+  return mockSongs.find((song) => song.emotion === emotion) ?? mockSongs[0];
 }
 
 export function AIAssistantPanel() {
-  const router = useRouter()
-  const pathname = usePathname()
-  const { setCurrentEmotion, setNowPlaying, setIsPlaying, togglePlayPause, isPlaying, currentEmotion } = useTheme()
+  const router = useRouter();
+  const pathname = usePathname();
+  const { setCurrentEmotion, setNowPlaying, setIsPlaying, currentEmotion, language } = useTheme();
 
-  const [isOpen, setIsOpen] = useState(false)
-  const [input, setInput] = useState('')
+  // States: 'minimized' (the orb launcher), 'expanded' (the chat panel)
+  // We remove 'dismissed' to ensure the launcher is always persistent as requested.
+  const [viewState, setViewState] = useState<'minimized' | 'expanded'>('minimized');
+  const [input, setInput] = useState('');
+  
   const [messages, setMessages] = useState<AssistantMessage[]>([
     {
       id: 'intro',
       role: 'assistant',
-      content:
-        'To la Mood Copilot. Cau co the nho to phat nhac, mo trang, doc cam xuc, xem gu nghe hoac tao nhanh mot huong nghe hop mood.',
+      content: language === 'vi' ? 'Trợ lý KhoaLisa sẵn sàng.' : 'KhoaLisa ready.',
     },
-  ])
+  ]);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const quickActions = useMemo(
     () =>
-      assistantQuickActions.map((item) => ({
+      assistantQuickActions.slice(0, 3).map((item) => ({
         id: item.id,
-        label: localizedLabel(item.label, 'vi'),
-        prompt: localizedLabel(item.prompt, 'vi'),
+        label: localizedLabel(item.label, language),
+        prompt: localizedLabel(item.prompt, language),
       })),
-    [],
-  )
+    [language],
+  );
+
+  // Auto-scroll logic
+  useEffect(() => {
+    if (messagesEndRef.current && viewState === 'expanded') {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, viewState]);
 
   const respond = (userInput: string) => {
-    const normalized = userInput.toLowerCase()
-    let reply = 'To da hieu yeu cau cua cau.'
+    const normalized = userInput.toLowerCase();
+    let reply = language === 'vi' ? 'Đã nhận lệnh.' : 'Acknowledged.';
 
     if (normalized.includes('calm') || normalized.includes('diu') || normalized.includes('thu gian')) {
-      const song = firstSongByEmotion('calm')
-      setCurrentEmotion('calm')
-      setNowPlaying(song)
-      setIsPlaying(true)
-      reply = `To da chuyen mood sang Binh yen va phat ${song.title}. Huong nay bam theo gu ${localizedLabel(tasteProfile.topGenres[1].label, 'vi')} cua cau.`
+      const song = firstSongByEmotion('calm');
+      setCurrentEmotion('calm');
+      setNowPlaying(song);
+      setIsPlaying(true);
+      reply = language === 'vi' ? `Sang mode Bình Yên. Chơi thẻ: ${song.title}.` : `Calm mode. Playing: ${song.title}.`;
     } else if (normalized.includes('voice') || normalized.includes('giong')) {
-      router.push(routeMap.emotion)
-      reply = 'To da mo trang Nhan dien cam xuc. Cau co the chuyen sang tab Giong noi va bat dau thu.'
-    } else if (normalized.includes('face') || normalized.includes('camera') || normalized.includes('khuon mat')) {
-      router.push(routeMap.emotion)
-      reply = 'To da dua cau toi trang Mood AI. Che do khuon mat da san sang trong khoi phan tich.'
+      router.push(routeMap.emotion);
+      reply = language === 'vi' ? 'Mở Phân tích Giọng nói.' : 'Opening Voice Analysis.';
+    } else if (normalized.includes('space') || normalized.includes('khong gian')) {
+      router.push(routeMap.space);
+      reply = language === 'vi' ? 'Vào Không Gian Cảm Xúc.' : 'Entering Emotion Space.';
     } else if (normalized.includes('text') || normalized.includes('mood') || normalized.includes('cam xuc')) {
-      const detectedEmotion = detectEmotionFromText(userInput)
-      const song = firstSongByEmotion(detectedEmotion)
-      setCurrentEmotion(detectedEmotion)
-      setNowPlaying(song)
-      reply = `To doc mood hien tai la ${emotionNames[detectedEmotion]}. ${song.title} dang la bai khoi dau hop nhat voi trang thai nay.`
-    } else if (normalized.includes('genre') || normalized.includes('gu nhac') || normalized.includes('taste')) {
-      router.push(routeMap.analytics)
-      reply = `Gu nghe noi bat cua cau hien la ${localizedLabel(tasteProfile.topGenres[0].label, 'vi')}, ${localizedLabel(tasteProfile.topGenres[1].label, 'vi')} va ${localizedLabel(tasteProfile.topGenres[2].label, 'vi')}. To da mo trang phan tich de cau xem chi tiet.`
-    } else if (normalized.includes('analytics') || normalized.includes('thong ke') || normalized.includes('phan tich')) {
-      router.push(routeMap.analytics)
-      reply = 'To da mo khu phan tich. O do cau se thay xu huong cam xuc, the loai noi bat, nghe si noi bat va cum gu nghe.'
-    } else if (normalized.includes('history') || normalized.includes('lich su')) {
-      router.push(routeMap.history)
-      reply = 'To da mo lich su nghe va lich su quet cam xuc gan day cho cau.'
-    } else if (normalized.includes('library') || normalized.includes('thu vien')) {
-      router.push(routeMap.library)
-      reply = 'To da mo Thu vien cua cau, noi co bai hat, playlist, bai da thich va cac bo suu tap cam xuc.'
-    } else if (normalized.includes('recommend') || normalized.includes('playlist') || normalized.includes('goi y') || normalized.includes('focus')) {
-      router.push(routeMap.recommendations)
-      reply = 'To da mo trang goi y. Cac playlist o do dang duoc uu tien theo mood hien tai va ho so gu nghe cua cau.'
-    } else if (normalized.includes('settings') || normalized.includes('cai dat')) {
-      router.push(routeMap.settings)
-      reply = 'To da mo cai dat de cau chinh camera, micro, quyen rieng tu va phat nhac.'
-    } else if (normalized.includes('pause') || normalized.includes('dung')) {
-      if (isPlaying) togglePlayPause()
-      reply = 'To da tam dung bai dang phat.'
-    } else if (normalized.includes('play') || normalized.includes('phat')) {
-      if (!isPlaying) togglePlayPause()
-      reply = 'To da tiep tuc phat nhac.'
+      const detectedEmotion = detectEmotionFromText(userInput);
+      const song = firstSongByEmotion(detectedEmotion);
+      setCurrentEmotion(detectedEmotion);
+      setNowPlaying(song);
+      reply = language === 'vi' ? `Nhận dạng: ${emotionNames[detectedEmotion]}.` : `Detected: ${detectedEmotion}.`;
+    } else if (normalized.includes('recommend') || normalized.includes('playlist') || normalized.includes('goi y')) {
+      router.push(routeMap.recommendations);
+      reply = language === 'vi' ? 'Mở Recommendation Intelligence.' : 'Opening Intelligence Dashboard.';
     } else {
-      const cluster = tasteProfile.clusters[0]
-      reply = `To chua map dung lenh do, nhung cum gu nghe hop nhat cua cau luc nay la ${localizedLabel(cluster.title, 'vi')}. Cau co the thu kieu nhu "mo nhan dien giong noi", "phat gi do diu lai" hoac "cho minh xem gu nhac".`
+      reply = language === 'vi' 
+        ? `${language === 'vi' ? 'Trợ lý KhoaLisa' : 'KhoaLisa'} đang ở trạng thái: ${emotionNames[currentEmotion]}.`
+        : `State: ${currentEmotion}.`;
     }
 
     const nextMessages: AssistantMessage[] = [
       { id: crypto.randomUUID(), role: 'user', content: userInput },
       { id: crypto.randomUUID(), role: 'assistant', content: reply },
-    ]
+    ];
 
-    setMessages((prev) => [...prev, ...nextMessages].slice(-10))
-  }
+    setMessages((prev) => [...prev, ...nextMessages].slice(-10));
+  };
 
   const handleSubmit = () => {
-    const trimmed = input.trim()
-    if (!trimmed) return
-    respond(trimmed)
-    setInput('')
-  }
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    respond(trimmed);
+    setInput('');
+  };
 
   return (
-    <div className="fixed bottom-24 right-4 z-[70] flex flex-col items-end gap-4 md:bottom-28 md:right-6">
-      {isOpen ? (
-        <div className="glass-strong relative w-[22rem] overflow-hidden rounded-[1.9rem] border border-white/10 p-4 shadow-[0_34px_90px_rgba(0,0,0,0.6)] md:w-[24rem]">
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.025),transparent_18%,transparent_82%,rgba(0,0,0,0.16))]" />
-          <div className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:repeating-linear-gradient(0deg,rgba(255,255,255,0.14)_0,rgba(255,255,255,0.14)_1px,transparent_1px,transparent_3px)]" />
-
-          <div className="relative">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="pill-label text-[0.58rem] text-white/32">{assistantPanelCopy.eyebrow}</p>
-              <h3 className="mt-2 flex items-center gap-2 text-lg font-semibold text-white">
-                <Bot className="h-4.5 w-4.5 text-[var(--brand-accent)]" />
-                {assistantPanelCopy.title}
-              </h3>
-              <p className="mt-2 max-w-[17rem] text-xs leading-6 text-white/50">{assistantPanelCopy.description}</p>
-            </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="chip-premium flex h-9 w-9 items-center justify-center text-white/48 transition-colors hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {quickActions.map((action) => (
-              <button
-                key={action.id}
-                onClick={() => respond(action.prompt)}
-                className="chip-premium px-3 py-2 text-xs font-medium text-white/68 transition-colors hover:text-white"
+    <div className="fixed bottom-10 right-4 z-[999] flex flex-col items-end gap-4 md:right-10">
+      
+      <AnimatePresence mode="wait">
+        
+        {/* ================================================================= */}
+        {/* 1. CHAT PANEL (EXPANDED STATE)                                   */}
+        {/* ================================================================= */}
+        {viewState === 'expanded' && (
+          <motion.div
+            key="panel"
+            initial={{ opacity: 0, y: 30, scale: 0.9, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: 40, scale: 0.8, filter: 'blur(20px)', transition: { duration: 0.25, ease: 'easeInOut' } }}
+            transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+            className="relative flex flex-col overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#06080a]/95 backdrop-blur-3xl shadow-[0_40px_100px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)] w-[20rem] md:w-[23rem] h-[32rem] origin-bottom-right"
+          >
+            {/* COMPACT CLEAN HEADER */}
+            <header className="flex flex-none items-center justify-between px-6 py-5 border-b border-white/[0.05]">
+              <div className="flex items-center gap-3">
+                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--brand-accent)]/10 text-[var(--brand-accent)] shadow-[0_0_15px_rgba(30,215,96,0.1)]">
+                    <Bot className="h-4 w-4" />
+                 </div>
+                 <h3 className="text-[0.75rem] font-black uppercase tracking-[0.2em] text-white">KhoaLisa AI</h3>
+              </div>
+              <button 
+                onClick={() => setViewState('minimized')}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white/30 hover:text-white hover:bg-white/10 transition-all active:scale-90"
               >
-                {action.label}
+                <X className="h-4 w-4" />
               </button>
-            ))}
-          </div>
+            </header>
 
-          <div className="mt-4 space-y-2 rounded-[1.35rem] border border-white/6 bg-black/16 p-3">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  'rounded-2xl px-3 py-2.5 text-sm leading-6',
-                  message.role === 'assistant'
-                    ? 'bg-white/[0.04] text-white/76'
-                    : 'ml-6 bg-[rgba(30,215,96,0.14)] text-white',
-                )}
-              >
-                {message.content}
+            {/* MESSAGES FLOW */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide flex flex-col gap-4">
+              <div className="mx-auto flex items-center gap-2 mb-4 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.02]">
+                 <span className="text-[0.6rem] uppercase tracking-[0.2em] text-white/40 truncate max-w-[120px]">{pathname}</span>
+                 <span className="h-1 w-1 rounded-full bg-white/20" />
+                 <span className="text-[0.6rem] uppercase tracking-[0.2em] text-[var(--brand-accent)] font-bold">{currentEmotion}</span>
               </div>
-            ))}
-          </div>
 
-          <div className="mt-4 grid gap-2">
-            <div className="card-premium flex items-center gap-3 rounded-[1.25rem] px-3 py-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(30,215,96,0.1)] text-[var(--brand-accent)]">
-                <WandSparkles className="h-4.5 w-4.5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white">{assistantPanelCopy.currentContext}</p>
-                <p className="truncate text-xs text-white/50">
-                  {assistantPanelCopy.routeLabel}: {pathname} • {assistantPanelCopy.moodLabel}: {emotionNames[currentEmotion]}
-                </p>
-              </div>
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, x: message.role === 'user' ? 10 : -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className={cn('flex w-full', message.role === 'user' ? 'justify-end' : 'justify-start')}
+                >
+                  <div
+                    className={cn(
+                      'max-w-[85%] rounded-2xl px-4 py-2.5 text-[0.8rem] leading-relaxed shadow-sm transition-all',
+                      message.role === 'assistant'
+                        ? 'bg-white/[0.03] border border-white/[0.05] text-white/70 rounded-tl-sm'
+                        : 'bg-[var(--brand-accent)] text-black font-semibold shadow-[0_10px_20px_rgba(30,215,96,0.15)] rounded-tr-sm',
+                    )}
+                  >
+                    <p className="tracking-wide select-none">{message.content}</p>
+                  </div>
+                </motion.div>
+              ))}
+              <div ref={messagesEndRef} className="h-4" />
             </div>
 
-            <div className="chip-premium flex items-center gap-2 px-3 py-2.5">
-              <MessageSquareText className="h-4 w-4 text-white/36" />
-              <input
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault()
-                    handleSubmit()
-                  }
-                }}
-                placeholder={assistantPanelCopy.inputPlaceholder}
-                className="flex-1 bg-transparent text-sm text-white placeholder:text-white/28 focus:outline-none"
-              />
-              <button
-                onClick={handleSubmit}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-accent)] text-[#06120a] shadow-[0_12px_24px_rgba(30,215,96,0.18)] transition-transform hover:scale-[1.03]"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </div>
+            {/* COMPOSER (PILL STYLE) */}
+            <div className="flex-none px-6 pb-6 pt-2 bg-gradient-to-t from-[#06080a] to-transparent">
+               <div className="mb-4 flex flex-wrap gap-2">
+                 {quickActions.map((action) => (
+                   <button
+                     key={action.id}
+                     onClick={() => respond(action.prompt)}
+                     className="flex items-center gap-1.5 rounded-full border border-white/5 bg-white/[0.02] px-3 py-1.5 text-[0.62rem] uppercase tracking-widest font-black text-white/30 transition-all hover:bg-white/10 hover:text-white"
+                   >
+                     <ChevronRight className="h-2.5 w-2.5" />
+                     {action.label}
+                   </button>
+                 ))}
+               </div>
 
-            <div className="grid grid-cols-3 gap-2 text-xs text-white/48">
-              <div className="card-premium rounded-[1.15rem] px-3 py-2.5">
-                <p className="pill-label text-[0.58rem] text-white/28">{assistantPanelCopy.moodCardLabel}</p>
-                <p className="mt-2 text-sm font-semibold text-white">{emotionNames[currentEmotion]}</p>
-              </div>
-              <div className="card-premium rounded-[1.15rem] px-3 py-2.5">
-                <p className="pill-label text-[0.58rem] text-white/28">{assistantPanelCopy.topGenreLabel}</p>
-                <p className="mt-2 text-sm font-semibold text-white">{localizedLabel(tasteProfile.topGenres[0].label, 'vi')}</p>
-              </div>
-              <div className="card-premium rounded-[1.15rem] px-3 py-2.5">
-                <p className="pill-label text-[0.58rem] text-white/28">{assistantPanelCopy.fastActionLabel}</p>
-                <p className="mt-2 flex items-center gap-1 text-sm font-semibold text-white">
-                  <ChevronRight className="h-3.5 w-3.5 text-[var(--brand-accent)]" />
-                  {assistantPanelCopy.ready}
-                </p>
-              </div>
+               <div className="group flex items-center gap-2 rounded-full border border-white/10 bg-black/50 p-1.5 focus-within:border-white/30 focus-within:bg-black shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] transition-all">
+                  <input
+                    value={input}
+                    onChange={(event) => setInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                         event.preventDefault();
+                         handleSubmit();
+                      }
+                    }}
+                    placeholder={language === 'vi' ? 'Nhập yêu cầu...' : 'Command...'}
+                    className="w-full bg-transparent px-4 text-[0.85rem] text-white placeholder:text-white/20 outline-none font-medium"
+                    autoComplete="off"
+                  />
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!input.trim()}
+                    className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all duration-300",
+                      input.trim() 
+                        ? "bg-[var(--brand-accent)] text-black hover:scale-105 shadow-[0_0_20px_rgba(30,215,96,0.3)]" 
+                        : "bg-white/5 text-white/10 pointer-events-none"
+                    )}
+                  >
+                    <Send className="h-4 w-4 ml-0.5" />
+                  </button>
+               </div>
             </div>
-          </div>
-          </div>
-        </div>
-      ) : null}
-
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        aria-expanded={isOpen}
-        aria-label={isOpen ? 'Close Mood Copilot' : 'Open Mood Copilot'}
-        className={cn(
-          'group relative flex h-[4.5rem] w-[4.5rem] items-center justify-center overflow-hidden rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(12,15,18,0.98),rgba(6,8,10,0.98))] shadow-[0_18px_52px_rgba(0,0,0,0.44),inset_0_0_0_1px_rgba(255,255,255,0.04)] transition-all duration-300',
-          isOpen
-            ? 'border-[var(--brand-accent)]/18 shadow-[0_20px_54px_rgba(0,0,0,0.46),0_0_28px_rgba(30,215,96,0.1),inset_0_0_0_1px_rgba(255,255,255,0.04)]'
-            : 'hover:-translate-y-0.5 hover:border-[var(--brand-accent)]/22 hover:shadow-[0_22px_58px_rgba(0,0,0,0.48),0_0_34px_rgba(30,215,96,0.14),inset_0_0_0_1px_rgba(255,255,255,0.04)]',
+          </motion.div>
         )}
-      >
-        <span className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_50%_28%,rgba(79,172,254,0.12),transparent_38%),radial-gradient(circle_at_50%_74%,rgba(30,215,96,0.16),transparent_34%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        <span className="pointer-events-none absolute inset-[5px] rounded-full border border-white/6" />
-        <Image
-          src="/img/logo/logochatbox.png"
-          alt="Mood Copilot"
-          width={44}
-          height={44}
-          className="relative h-11 w-11 object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.32)]"
-        />
-        <span className="absolute bottom-[0.62rem] right-[0.62rem] h-2.5 w-2.5 rounded-full border border-[#05080a] bg-[var(--brand-accent)] shadow-[0_0_14px_rgba(30,215,96,0.78)]" />
-      </button>
+
+        {/* ================================================================= */}
+        {/* 2. FLOATING ORB LAUNCHER (MINIMIZED STATE)                       */}
+        {/* ================================================================= */}
+        {viewState === 'minimized' && (
+          <motion.div
+            key="launcher"
+            initial={{ opacity: 0, scale: 0.5, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 1.2, filter: 'blur(10px)', transition: { duration: 0.2 } }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="group relative"
+          >
+            {/* Subtle Outer Glow */}
+            <div className="absolute inset-0 rounded-full bg-[var(--brand-accent)]/20 blur-[15px] opacity-0 group-hover:opacity-100 transition-opacity" />
+            
+            {/* The Simple Circular Chat Bubble Launcher */}
+            <button
+               onClick={() => setViewState('expanded')}
+               className="relative flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-full border border-white/10 bg-black/80 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.05)] transition-all hover:bg-black hover:border-white/20 hover:scale-110 active:scale-95"
+            >
+               <div className="relative flex h-12 w-12 items-center justify-center rounded-full overflow-hidden">
+                  <Image
+                    src="/img/logo/logochatbox.png"
+                    alt="KhoaLisa AI"
+                    width={40}
+                    height={40}
+                    className="object-contain transition-transform duration-700 group-hover:rotate-12 rounded-full"
+                  />
+                  {/* Status Indicator */}
+                  <span className="absolute bottom-1 right-1 flex h-2.5 w-2.5 items-center justify-center">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--brand-accent)] opacity-40"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--brand-accent)] shadow-[0_0_8px_var(--brand-accent)]"></span>
+                  </span>
+               </div>
+            </button>
+          </motion.div>
+        )}
+
+      </AnimatePresence>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      `}} />
     </div>
-  )
+  );
 }

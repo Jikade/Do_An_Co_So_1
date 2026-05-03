@@ -9,11 +9,8 @@ interface ThemeContextType {
   setCurrentTheme: (theme: SongTheme) => void
   currentEmotion: Emotion
   setCurrentEmotion: (emotion: Emotion) => void
-<<<<<<< HEAD
   isSidebarCollapsed: boolean
   setIsSidebarCollapsed: (collapsed: boolean) => void
-=======
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
   language: Language
   setLanguage: (lang: Language) => void
   t: (key: keyof typeof translations.vi) => string
@@ -48,10 +45,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [currentTheme, setCurrentTheme] = useState<SongTheme>('pink')
   const [currentEmotion, setCurrentEmotion] = useState<Emotion>('happy')
-<<<<<<< HEAD
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-=======
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
   const [language, setLanguage] = useState<Language>('vi')
   const [nowPlaying, setNowPlayingState] = useState<Song | null>(mockSongs[0])
   const [isPlaying, setIsPlayingState] = useState(false)
@@ -221,11 +215,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setCurrentTheme,
     currentEmotion,
     setCurrentEmotion,
-<<<<<<< HEAD
     isSidebarCollapsed,
     setIsSidebarCollapsed,
-=======
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     language,
     setLanguage,
     t,
@@ -255,10 +246,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }), [
     currentTheme,
     currentEmotion,
-<<<<<<< HEAD
     isSidebarCollapsed,
-=======
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     language,
     t,
     nowPlaying,

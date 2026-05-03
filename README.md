@@ -1,6 +1,11 @@
-<<<<<<< HEAD
-# -n-C-S-1
-=======
-# Đồ Sát Cơ Sở
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
-Thành viên: Khoa, Hiếu, Nam
+# Emotion Music Player
+
+Dự án gồm frontend Next.js và backend FastAPI/PostgreSQL/ML.
+
+## Chạy nhanh
+
+Frontend: http://localhost:3000  
+Backend API: http://localhost:8000  
+ML service: http://localhost:8001
+
+Xem thêm cấu hình Docker trong `docker-compose.yml`.

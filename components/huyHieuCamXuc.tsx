@@ -54,15 +54,9 @@ export function MoodBadge({
   };
 
   return (
-<<<<<<< HEAD
     <span
       className={cn(
         'inline-flex items-center rounded-full border border-white/8 font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all duration-300',
-=======
-    <span 
-      className={cn(
-        'inline-flex items-center rounded-full font-medium transition-all duration-300',
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
         colors.bg,
         colors.text,
         sizeClasses[size],

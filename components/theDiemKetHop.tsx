@@ -49,15 +49,9 @@ export function FusionScoreCard({ className, size = 'md' }: FusionScoreCardProps
   const offset = circumference - (fusionScore / 100) * circumference;
 
   return (
-<<<<<<< HEAD
     <div className={cn('rounded-[1.75rem] border border-white/6 bg-[linear-gradient(180deg,rgba(33,33,33,0.96),rgba(22,22,22,0.94))] p-5', className)}>
       <div className="flex items-center gap-2 mb-3">
         <Activity className="w-4 h-4 text-[var(--brand-accent)]" />
-=======
-    <div className={cn('glass rounded-2xl p-4', className)}>
-      <div className="flex items-center gap-2 mb-3">
-        <Activity className="w-4 h-4 text-[var(--song-primary)]" />
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
         <span className="text-sm font-medium text-foreground">{t('fusionScore')}</span>
       </div>
       <div className="flex items-center justify-center">
