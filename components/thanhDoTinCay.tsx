@@ -26,13 +26,8 @@ export function ConfidenceBar({
   const percentage = Math.min((value / maxValue) * 100, 100);
 
   const colorClasses = {
-<<<<<<< HEAD
     primary: 'bg-[var(--brand-accent)]',
     secondary: 'bg-[var(--song-primary)]',
-=======
-    primary: 'bg-[var(--song-primary)]',
-    secondary: 'bg-[var(--song-secondary)]',
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
     accent: 'bg-[var(--song-accent)]',
   };
 
@@ -59,11 +54,7 @@ export function ConfidenceBar({
         )}
       </div>
       <div className={cn(
-<<<<<<< HEAD
         'w-full overflow-hidden rounded-full bg-white/8',
-=======
-        'w-full rounded-full bg-secondary/50 overflow-hidden',
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
         sizeClasses[size]
       )}>
         <div

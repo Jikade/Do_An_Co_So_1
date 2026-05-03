@@ -43,21 +43,11 @@ export function UpgradeCard({ className, variant = 'banner' }: UpgradeCardProps)
   if (variant === 'compact') {
     return (
       <div className={cn(
-<<<<<<< HEAD
         'flex items-center gap-3 rounded-2xl border border-white/8 bg-[linear-gradient(90deg,rgba(30,215,96,0.12),rgba(255,255,255,0.03))] p-4',
         className
       )}>
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--brand-accent-soft)]">
           <Crown className="h-4 w-4 text-[var(--brand-accent)]" />
-=======
-        'glass rounded-xl p-3 flex items-center gap-3',
-        'bg-gradient-to-r from-[var(--song-primary)]/10 to-transparent',
-        'border-[var(--song-primary)]/30',
-        className
-      )}>
-        <div className="w-8 h-8 rounded-lg bg-[var(--song-primary)]/20 flex items-center justify-center">
-          <Crown className="w-4 h-4 text-[var(--song-primary)]" />
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground">{t.title}</p>
@@ -71,26 +61,12 @@ export function UpgradeCard({ className, variant = 'banner' }: UpgradeCardProps)
 
   if (variant === 'banner') {
     return (
-<<<<<<< HEAD
       <div className={cn('relative overflow-hidden rounded-[1.9rem] border border-white/8 bg-[linear-gradient(135deg,rgba(30,215,96,0.14),rgba(255,255,255,0.03),rgba(18,18,18,0.96))] p-6', className)}>
         <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--song-primary)]/10 rounded-full blur-3xl" />
         <div className="relative flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--brand-accent-soft)]">
               <Sparkles className="h-6 w-6 text-[var(--brand-accent)]" />
-=======
-      <div className={cn(
-        'relative overflow-hidden rounded-2xl p-6',
-        'bg-gradient-to-br from-[var(--song-primary)]/20 via-[var(--song-secondary)]/10 to-transparent',
-        'border border-[var(--song-primary)]/30',
-        className
-      )}>
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--song-primary)]/10 rounded-full blur-3xl" />
-        <div className="relative flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[var(--song-primary)]/20 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-[var(--song-primary)]" />
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
             </div>
             <div>
               <h4 className="font-semibold text-foreground">{t.title}</h4>

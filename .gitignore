@@ -1,8 +1,32 @@
 node_modules
 .next
-.env
-.env.local
 dist
 build
+out
 coverage
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.log
+tsconfig.tsbuildinfo
+
+# Build/cache
+.next/
+node_modules/
+tsconfig.tsbuildinfo
+
+# IDE
+.idea/
+
+# Runtime media files
+emotion-music-player/data/mp3/*
+!emotion-music-player/data/mp3/.gitkeep
+emotion-music-player/data/images/*
+!emotion-music-player/data/images/.gitkeep
+
+# Local env
+.env
+.env.local
+.env.*.local

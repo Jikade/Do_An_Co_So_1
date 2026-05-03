@@ -1,11 +1,9 @@
-<<<<<<< HEAD
 'use client'
 
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
-  BarChart3,
   Brain,
   ChevronLeft,
   History,
@@ -14,7 +12,7 @@ import {
   Radio,
   Settings,
   Sparkles,
-  Waves,
+  Orbit,
 } from 'lucide-react'
 import { cn } from '@/lib/tienIch'
 import { useTheme } from '@/lib/nguCanhGiaoDien'
@@ -36,7 +34,7 @@ const navGroups = [
     items: [
       { key: 'emotionDetection', href: '/nhanDienCamXuc', icon: Brain },
       { key: 'history', href: '/lichSu', icon: History },
-      { key: 'analytics', href: '/phanTich', icon: BarChart3 },
+      { key: 'space', href: '/khongGian', icon: Orbit },
     ],
   },
   {
@@ -57,114 +55,139 @@ export function AppSidebar({ className }: AppSidebarProps) {
   return (
     <aside
       className={cn(
-        'shell-panel fixed left-0 top-0 z-40 hidden h-screen flex-col border-r border-white/6 text-white md:flex',
-        'transition-all duration-300',
+        'group/sidebar fixed left-0 top-0 z-40 hidden h-screen flex-col bg-[#010103]/60 backdrop-blur-3xl text-white md:flex transition-all duration-500 ease-out border-r border-white/[0.04] shadow-[10px_0_40px_rgba(0,0,0,0.5)]',
         isSidebarCollapsed ? 'w-[5.25rem]' : 'w-[16.5rem]',
         className,
       )}
     >
+      {/* Ambient Inner Glow */}
+      <div className="pointer-events-none absolute inset-0 w-full h-full opacity-30 shadow-[inset_1px_0_20px_rgba(255,255,255,0.01)] mix-blend-screen" />
+
       <button
         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         className={cn(
-          'absolute top-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10',
-          'bg-[linear-gradient(180deg,rgba(15,18,22,0.98),rgba(7,10,12,0.98))] text-white/72 shadow-[0_16px_32px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.04)]',
-          'transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--brand-accent)]/24 hover:text-white hover:shadow-[0_18px_40px_rgba(0,0,0,0.4),0_0_24px_rgba(30,215,96,0.1)]',
-          isSidebarCollapsed ? '-right-5' : '-right-5',
+          'absolute top-6 z-50 flex h-8 w-8 items-center justify-center rounded-full border border-white/5 bg-[#0a0b0e] text-white/50 shadow-[0_4px_12px_rgba(0,0,0,0.4)] backdrop-blur-xl',
+          'transition-all duration-500 hover:scale-110 hover:border-white/20 hover:text-white',
+          isSidebarCollapsed ? '-right-4 opacity-0 group-hover/sidebar:opacity-100' : '-right-4',
         )}
       >
-        <ChevronLeft className={cn('h-4.5 w-4.5 transition-transform duration-300', isSidebarCollapsed && 'rotate-180')} />
+        <ChevronLeft className={cn('h-4 w-4 transition-transform duration-500', isSidebarCollapsed && 'rotate-180')} />
       </button>
 
-      <div className={cn('border-b border-white/6 px-4 py-4', isSidebarCollapsed ? 'flex justify-center' : 'flex items-center')}>
+      {/* HEADER */}
+      <div className={cn('relative z-10 px-4 py-8 pb-4 transition-all', isSidebarCollapsed ? 'flex justify-center' : 'flex items-center')}>
         <Link
           href="/bangDieuKhien"
           className={cn(
-            'flex items-center gap-3 transition-all duration-300',
+            'flex items-center gap-4 transition-all duration-300 w-full group/logo',
             isSidebarCollapsed && 'justify-center',
           )}
         >
-          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#090b10] shadow-[0_0_30px_rgba(70,213,255,0.12)] backdrop-blur p-1">
-            <div className="relative h-full w-full overflow-hidden rounded-xl">
-              <Image
-                src="/img/logo/logo.jpg"
-                alt="Logo"
-                fill
-                className="object-contain"
-                sizes="44px"
-              />
-            </div>
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[1.2rem] bg-black shadow-[0_0_25px_rgba(255,255,255,0.08)] ring-1 ring-white/10 group-hover/logo:ring-white/20 transition-all">
+            <Image
+              src="/img/logo/logo.jpg"
+              alt="Logo"
+              fill
+              className="object-cover opacity-90 group-hover/logo:opacity-100 transition-opacity"
+              sizes="40px"
+            />
           </div>
-          <div className={cn('transition-all duration-200', isSidebarCollapsed && 'pointer-events-none w-0 overflow-hidden opacity-0')}>
-            <p className="pill-label text-[0.62rem] text-white/35">{copy.brandEyebrow}</p>
-            <span className="text-base font-semibold text-white">MoodSync AI</span>
+          <div className={cn('transition-all duration-300 whitespace-nowrap', isSidebarCollapsed && 'pointer-events-none w-0 opacity-0 translate-x-[-10px]')}>
+            <span className="text-[1.05rem] font-black tracking-tight text-white/95">MoodSync<span className="text-[var(--brand-accent)] ml-0.5 opacity-90">AI</span></span>
           </div>
         </Link>
       </div>
 
+      {/* MINI MOOD SYNC HUD */}
       {!isSidebarCollapsed ? (
-        <div className="px-4 pt-4">
-          <div className="surface-panel overflow-hidden p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="pill-label text-[0.62rem] text-white/35">{copy.moodTitle}</p>
-                <p className="mt-2 text-sm text-white/78">Tâm trạng hiện tại</p>
-              </div>
-              <span className="accent-pill pill-label rounded-full px-2.5 py-1 text-[0.66rem] font-medium">{copy.syncLabel}</span>
+        <div className="relative z-10 px-5 pt-2 pb-6">
+          <div className="relative overflow-hidden rounded-[1.4rem] p-4 bg-gradient-to-b from-white/[0.04] to-transparent border border-white/[0.03] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[0.6rem] font-bold uppercase tracking-[0.2em] text-white/40">{copy.moodTitle}</span>
+              <span className="flex items-center gap-1.5 rounded-full bg-[var(--brand-accent)]/10 px-2 py-0.5 text-[0.55rem] font-bold uppercase tracking-widest text-[var(--brand-accent)] border border-[var(--brand-accent)]/20 shadow-[0_0_15px_rgba(30,215,96,0.15)]">
+                <div className="h-1 w-1 rounded-full bg-[var(--brand-accent)] animate-pulse" />
+                SYNC
+              </span>
             </div>
-            <MoodBadge emotion={currentEmotion} animated className="mt-4" />
-            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/8">
-              <div className="h-full w-2/3 rounded-full bg-[linear-gradient(90deg,var(--brand-accent),rgba(30,215,96,0.55))]" />
-            </div>
+            <MoodBadge emotion={currentEmotion} animated size="sm" />
           </div>
         </div>
       ) : null}
 
-      <nav className="flex-1 overflow-y-auto px-3 py-5">
-        <div className="space-y-4">
+      {/* NAVIGATION */}
+      <nav className="relative z-10 flex-1 overflow-y-auto px-3 pb-8 scrollbar-hide">
+        <div className="space-y-6">
           {navGroups.map((group) => (
-            <div key={group.id}>
+            <div key={group.id} className="relative">
               {!isSidebarCollapsed ? (
-                <p className="pill-label px-3 pb-2 text-[0.62rem] text-white/28">
+                <p className="px-4 pb-2 text-[0.6rem] font-bold uppercase tracking-[0.25em] text-white/20">
                   {copy.groups[group.id]}
                 </p>
               ) : null}
-              <ul className="space-y-1.5">
+              <ul className="space-y-1">
                 {group.items.map((item) => {
                   const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
                   const Icon = item.icon
+                  
+                  // Special logic for the "Khu Vực Không Gian"
+                  const isSpaceLink = item.key === 'space'
 
                   return (
                     <li key={item.key}>
                       <Link
                         href={item.href}
                         className={cn(
-                          'group relative flex items-center gap-3 rounded-2xl px-3 py-3 transition-all duration-200',
+                          'group relative flex items-center gap-3.5 rounded-2xl px-3 py-2.5 transition-all duration-300',
                           isSidebarCollapsed && 'justify-center px-2',
                           isActive
-                            ? 'translate-x-1 bg-[linear-gradient(90deg,rgba(30,215,96,0.12),rgba(255,255,255,0.02))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_22px_rgba(0,0,0,0.22)]'
-                            : 'text-white/50 hover:bg-white/[0.035] hover:text-white',
+                            ? isSpaceLink 
+                               ? 'bg-white/[0.06] shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]' 
+                               : 'bg-white/[0.04]'
+                            : 'hover:bg-white/[0.03]',
                         )}
                       >
-                        {isActive && !isSidebarCollapsed ? <span className="absolute left-0 top-1/2 h-8 w-0.5 -translate-y-1/2 rounded-full bg-[var(--brand-accent)]" /> : null}
+                        {/* Interactive Hover Glow Background (Only visible on hover if not active) */}
+                        {!isActive && (
+                          <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none" />
+                        )}
+
+                        {/* Active Indicator Line */}
+                        {isActive && !isSidebarCollapsed ? (
+                           <div className={cn(
+                             "absolute left-0 top-1/2 h-[60%] w-[3px] -translate-y-1/2 rounded-r-full shadow-[0_0_12px_var(--brand-accent)]",
+                             isSpaceLink ? "bg-[#a88beb] shadow-[0_0_12px_#a88beb]" : "bg-[var(--brand-accent)]"
+                           )} />
+                        ) : null}
+
+                        {/* Icon Container */}
                         <div
                           className={cn(
-                            'flex h-10 w-10 items-center justify-center rounded-2xl transition-all',
+                            'relative flex h-9 w-9 items-center justify-center rounded-[1rem] transition-all duration-500',
                             isActive
-                              ? 'scale-[1.06] bg-[rgba(30,215,96,0.12)] text-[var(--brand-accent)]'
-                              : 'bg-white/[0.025] text-white/60 group-hover:bg-white/[0.05] group-hover:text-white',
+                              ? isSpaceLink
+                                 ? 'bg-[#a88beb]/10 text-[#a88beb] ring-1 ring-[#a88beb]/20 shadow-[0_0_20px_rgba(168,139,235,0.2)]'
+                                 : 'bg-[var(--brand-accent)]/10 text-[var(--brand-accent)] ring-1 ring-[var(--brand-accent)]/20 shadow-[0_0_20px_rgba(30,215,96,0.15)]'
+                              : 'text-white/40 group-hover:text-white/90 group-hover:bg-white/[0.05]',
                           )}
                         >
-                          <Icon className="h-4.5 w-4.5 flex-shrink-0" />
+                          <Icon className={cn('h-4 w-4 transition-transform duration-500', isActive && isSpaceLink && 'animate-spin-slow')} />
                         </div>
+
+                        {/* Label */}
                         {!isSidebarCollapsed ? (
-                          <>
-                            <span className={cn('text-sm font-semibold transition-all', isActive ? 'tracking-[0.01em]' : '')}>
-                              {copy.navLabels[item.key]}
-                            </span>
-                            {isActive ? <span className="ml-auto h-2 w-2 rounded-full bg-[var(--brand-accent)]" /> : null}
-                          </>
+                          <span className={cn(
+                             'text-[0.8rem] font-medium transition-all duration-300', 
+                             isActive ? 'text-white tracking-wide' : 'text-white/50 group-hover:text-white/90'
+                          )}>
+                            {copy.navLabels[item.key]}
+                          </span>
                         ) : null}
+
+                        {/* Space Special Aura */}
+                        {isActive && isSpaceLink && !isSidebarCollapsed && (
+                           <div className="absolute right-4 w-1.5 h-1.5 rounded-full bg-[#a88beb] animate-pulse shadow-[0_0_8px_#a88beb]" />
+                        )}
                       </Link>
                     </li>
                   )
@@ -174,144 +197,11 @@ export function AppSidebar({ className }: AppSidebarProps) {
           ))}
         </div>
       </nav>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      `}} />
     </aside>
   )
-=======
-'use client';
-
-import { cn } from '@/lib/tienIch';
-import { useTheme } from '@/lib/nguCanhGiaoDien';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  Home, 
-  LayoutDashboard, 
-  Radio, 
-  Compass, 
-  Sparkles, 
-  History, 
-  BarChart3, 
-  Settings,
-  Brain,
-  ChevronLeft,
-  Crown
-} from 'lucide-react';
-import { MoodBadge } from './huyHieuCamXuc';
-import { useState } from 'react';
-
-const navItems = [
-  { key: 'home', href: '/', icon: Home },
-  { key: 'dashboard', href: '/bangDieuKhien', icon: LayoutDashboard },
-  { key: 'emotionDetection', href: '/nhanDienCamXuc', icon: Brain },
-  { key: 'nowPlaying', href: '/dangPhat', icon: Radio },
-  { key: 'recommendations', href: '/goiY', icon: Sparkles },
-  { key: 'history', href: '/lichSu', icon: History },
-  { key: 'analytics', href: '/phanTich', icon: BarChart3 },
-  { key: 'settings', href: '/caiDat', icon: Settings },
-] as const;
-
-interface AppSidebarProps {
-  className?: string;
-}
-
-export function AppSidebar({ className }: AppSidebarProps) {
-  const { t, currentEmotion, language } = useTheme();
-  const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  return (
-    <aside className={cn(
-      'fixed left-0 top-0 z-40 h-screen flex-col border-r border-border/50',
-      'bg-sidebar/80 backdrop-blur-xl hidden md:flex',
-      'transition-all duration-300',
-      isCollapsed ? 'w-20' : 'w-64',
-      className
-    )}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border/50">
-        <Link href="/" className={cn(
-          'flex items-center gap-3 transition-opacity',
-          isCollapsed && 'opacity-0 pointer-events-none'
-        )}>
-          <div className="w-10 h-10 rounded-xl bg-[var(--song-primary)] flex items-center justify-center">
-            <Radio className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-lg text-foreground">MoodSync AI</span>
-        </Link>
-        <button 
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-        >
-          <ChevronLeft className={cn(
-            'w-5 h-5 transition-transform',
-            isCollapsed && 'rotate-180'
-          )} />
-        </button>
-      </div>
-
-      {/* Current Mood Card */}
-      {!isCollapsed && (
-        <div className="p-4">
-          <div className="glass rounded-xl p-3">
-            <p className="text-xs text-muted-foreground mb-2">{t('currentMood')}</p>
-            <MoodBadge emotion={currentEmotion} animated />
-          </div>
-        </div>
-      )}
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-2 overflow-y-auto">
-        <ul className="space-y-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || 
-              (item.href !== '/' && pathname.startsWith(item.href));
-            const Icon = item.icon;
-            
-            return (
-              <li key={item.key}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all',
-                    'hover:bg-sidebar-accent',
-                    isActive && 'bg-[var(--song-primary)]/20 text-[var(--song-primary)]',
-                    !isActive && 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <Icon className={cn('w-5 h-5 flex-shrink-0', isCollapsed && 'mx-auto')} />
-                  {!isCollapsed && (
-                    <span className="font-medium text-sm">
-                      {t(item.key as keyof typeof import('@/lib/duLieuGiaLap').translations.vi)}
-                    </span>
-                  )}
-                  {isActive && !isCollapsed && (
-                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--song-primary)]" />
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {/* Upgrade Card */}
-      {!isCollapsed && (
-        <div className="p-4 border-t border-border/50">
-          <div className="glass rounded-xl p-4 bg-gradient-to-br from-[var(--song-primary)]/10 to-transparent">
-            <div className="flex items-center gap-2 mb-2">
-              <Crown className="w-4 h-4 text-[var(--song-primary)]" />
-              <span className="text-xs font-medium text-[var(--song-primary)]">VIP Pro</span>
-            </div>
-            <p className="text-xs text-muted-foreground mb-3">
-              {language === 'vi' ? 'Mở khóa tất cả tính năng' : 'Unlock all features'}
-            </p>
-            <button className="w-full py-2 rounded-lg bg-[var(--song-primary)] text-white text-xs font-medium hover:bg-[var(--song-primary)]/90 transition-colors">
-              {language === 'vi' ? 'Nâng cấp' : 'Upgrade'}
-            </button>
-          </div>
-        </div>
-      )}
-    </aside>
-  );
->>>>>>> 8587083219adb682e5b3c9d1293f3780e0522532
 }
