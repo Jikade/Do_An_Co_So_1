@@ -1078,3 +1078,92 @@ export function t(
 ): string {
   return translations[lang][key];
 }
+
+export type ApiTrack = {
+  id: number;
+  title: string;
+  artist: string;
+  audio_url: string;
+  duration: number;
+  emotion?: Emotion | string | null;
+  emotion_label_vi?: string | null;
+  cover_image?: string | null;
+  emotion_scores?: Record<string, number> | null;
+};
+
+function chuanHoaCamXuc(emotion?: string | null): Emotion {
+  const allowed: Emotion[] = [
+    "happy",
+    "sad",
+    "calm",
+    "angry",
+    "romantic",
+    "nostalgic",
+    "energetic",
+    "stressed",
+  ];
+
+  if (emotion && allowed.includes(emotion as Emotion)) {
+    return emotion as Emotion;
+  }
+
+  return "calm";
+}
+
+function layThemeTheoCamXuc(emotion: Emotion): SongTheme {
+  const map: Record<Emotion, SongTheme> = {
+    happy: "pink",
+    sad: "blue",
+    calm: "cyan",
+    angry: "red",
+    romantic: "violet",
+    nostalgic: "sepia",
+    energetic: "red",
+    stressed: "green",
+  };
+
+  return map[emotion];
+}
+
+export function chuyenTrackApiThanhSong(track: ApiTrack): Song {
+  const emotion = chuanHoaCamXuc(track.emotion);
+  const theme = layThemeTheoCamXuc(emotion);
+
+  return taoBaiHat({
+    id: String(track.id),
+    title: track.title,
+    artist: track.artist,
+    album: "MoodSync AI",
+    duration: track.duration || 0,
+    theme,
+    coverUrl: track.cover_image ? anh(track.cover_image) : "/placeholder.svg",
+    audioUrl: track.audio_url ? nhac(track.audio_url) : "",
+    emotion,
+    mood: emotion,
+    lyricsVi: [],
+    lyricsEn: [],
+    relatedSongIds: [],
+  });
+}
+
+export async function layBaiHatTuBackend(): Promise<Song[]> {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+
+  const response = await fetch(`${API_BASE_URL}/tracks/`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Không tải được danh sách bài hát: ${response.status}`);
+  }
+
+  const tracks = (await response.json()) as ApiTrack[];
+
+  return tracks.map(chuyenTrackApiThanhSong);
+}
