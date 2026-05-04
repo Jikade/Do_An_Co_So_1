@@ -1,4 +1,5 @@
 // Du lieu gia lap cho giao dien MoodSync AI
+import { toImageUrl, toMediaUrl } from "@/lib/api-client";
 
 export type SongTheme =
   | "pink"
@@ -1136,8 +1137,10 @@ export function chuyenTrackApiThanhSong(track: ApiTrack): Song {
     album: "MoodSync AI",
     duration: track.duration || 0,
     theme,
-    coverUrl: track.cover_image ? anh(track.cover_image) : "/placeholder.svg",
-    audioUrl: track.audio_url ? nhac(track.audio_url) : "",
+    coverUrl: track.cover_image
+      ? toImageUrl(track.cover_image)
+      : "/placeholder.svg",
+    audioUrl: track.audio_url ? toMediaUrl(track.audio_url) : "",
     emotion,
     mood: emotion,
     lyricsVi: [],

@@ -2,6 +2,7 @@ import os
 import sys
 import json
 from pathlib import Path
+from urllib.parse import quote
 
 import psycopg2
 
@@ -27,63 +28,83 @@ def format_title(filename: str) -> str:
 
 
 def main():
+    if not MP3_DIR.exists():
+        raise RuntimeError(f"MP3 directory not found: {MP3_DIR}")
+
     conn = psycopg2.connect(
         host=DB_HOST,
         dbname=DB_NAME,
         user=DB_USER,
         password=DB_PASSWORD,
     )
+
     cur = conn.cursor()
 
     inserted = 0
     skipped = 0
 
-    for filename in sorted(os.listdir(MP3_DIR)):
-        if not filename.lower().endswith(".mp3"):
-            continue
+    try:
+        for filename in sorted(os.listdir(MP3_DIR)):
+            if not filename.lower().endswith(".mp3"):
+                continue
 
-        file_path = str(MP3_DIR / filename)
-        title = format_title(filename)
-        artist = "Unknown Artist"
-        audio_url = f"http://localhost:8000/media/{filename}"
-        duration = 180000
+            file_path = str(MP3_DIR / filename)
+            title = format_title(filename)
+            artist = "Unknown Artist"
+            audio_url = f"http://localhost:8000/media/{quote(filename)}"
+            duration = 180000
 
-        payload = enrich_track_payload(file_path, {
-            "title": title,
-            "artist": artist,
-            "audio_url": audio_url,
-            "duration": duration,
-        }, force_reclassify=True)
+            cur.execute("SELECT id FROM tracks WHERE audio_url = %s", (audio_url,))
+            if cur.fetchone():
+                skipped += 1
+                continue
 
-        cur.execute("SELECT id FROM tracks WHERE audio_url = %s", (audio_url,))
-        if cur.fetchone():
-            skipped += 1
-            continue
-
-        cur.execute(
-            """
-            INSERT INTO tracks (
-                title, artist, audio_url, duration,
-                file_path, emotion, emotion_scores, cover_image
+            payload = enrich_track_payload(
+                file_path,
+                {
+                    "title": title,
+                    "artist": artist,
+                    "audio_url": audio_url,
+                    "duration": duration,
+                },
+                force_reclassify=True,
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s)
-            """,
-            (
-                payload["title"],
-                payload["artist"],
-                payload["audio_url"],
-                payload["duration"],
-                payload["file_path"],
-                payload["emotion"],
-                json.dumps(payload["emotion_scores"], ensure_ascii=False),
-                payload["cover_image"],
-            ),
-        )
-        inserted += 1
 
-    conn.commit()
-    cur.close()
-    conn.close()
+            cur.execute(
+                """
+                INSERT INTO tracks (
+                    title,
+                    artist,
+                    audio_url,
+                    duration,
+                    emotion,
+                    emotion_scores,
+                    cover_image
+                )
+                VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s)
+                """,
+                (
+                    payload["title"],
+                    payload["artist"],
+                    payload["audio_url"],
+                    payload["duration"],
+                    payload.get("emotion", "relax"),
+                    json.dumps(payload.get("emotion_scores") or {}),
+                    payload.get("cover_image"),
+                ),
+            )
+
+            inserted += 1
+
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        cur.close()
+        conn.close()
 
     print(f"Inserted: {inserted}")
     print(f"Skipped: {skipped}")

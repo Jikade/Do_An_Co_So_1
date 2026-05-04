@@ -1,37 +1,15 @@
 "use client";
 
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  ArrowRight,
-  Crown,
-  Disc3,
-  Play,
-  Radio,
-  ScanFace,
-  Waves,
-  Sparkles,
-  Heart,
-  Music2,
-  ChevronRight,
-  Mic2,
-  Activity,
-  Zap,
-  Orbit,
-  Atom,
-  CircleDot,
-  Globe,
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { Play, Radio, ScanFace, Waves, Sparkles, Zap } from "lucide-react";
 import { gsap } from "gsap";
-import {
-  genreCollections,
-  getFeaturedLandingPlaylists,
-  localizedCopy,
-  moodCollections,
-} from "@/lib/product-upgrade-data";
+
+import { localizedCopy, moodCollections } from "@/lib/product-upgrade-data";
 import { landingPageCopy } from "@/lib/vietnamese-home-copy";
 import { cn } from "@/lib/tienIch";
+import { DanhSachBaiHatTuApi } from "@/components/DanhSachBaiHatTuApi";
 
 // =================================================================
 // 1. ADVANCED COSMIC ATMOSPHERE (6-LAYER VOLUMETRIC SYSTEM)
@@ -45,36 +23,39 @@ function CosmicCore() {
   const shardsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let ctx = gsap.context(() => {
-      // 1. MOUSE PARALLAX WITH QUICK-TO (SMOOTHING)
-      const xSet = gsap.quickTo(containerRef.current, "x", {
-        duration: 0.8,
-        ease: "power3",
-      });
-      const ySet = gsap.quickTo(containerRef.current, "y", {
-        duration: 0.8,
-        ease: "power3",
-      });
-
+    const ctx = gsap.context(() => {
       const handleMouseMove = (e: MouseEvent) => {
         const { clientX, clientY } = e;
         const x = (clientX / window.innerWidth - 0.5) * 40;
         const y = (clientY / window.innerHeight - 0.5) * 40;
 
-        // Deep Parallax logic
         gsap.to(starfieldRef.current, {
           x: x * 0.5,
           y: y * 0.5,
           duration: 1.5,
         });
-        gsap.to(nebulaRef.current, { x: -x * 1.2, y: -y * 1.2, duration: 2 });
-        gsap.to(coreRef.current, { x: -x * 0.8, y: -y * 0.8, duration: 1.8 });
-        gsap.to(shardsRef.current, { x: x * 2.5, y: y * 2.5, duration: 2.2 });
+
+        gsap.to(nebulaRef.current, {
+          x: -x * 1.2,
+          y: -y * 1.2,
+          duration: 2,
+        });
+
+        gsap.to(coreRef.current, {
+          x: -x * 0.8,
+          y: -y * 0.8,
+          duration: 1.8,
+        });
+
+        gsap.to(shardsRef.current, {
+          x: x * 2.5,
+          y: y * 2.5,
+          duration: 2.2,
+        });
       };
 
       window.addEventListener("mousemove", handleMouseMove);
 
-      // 2. CORE PULSE & FLOATING
       gsap.to(".core-pulse", {
         scale: 1.15,
         opacity: 0.8,
@@ -105,7 +86,7 @@ function CosmicCore() {
       ref={containerRef}
       className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-[#020202]"
     >
-      {/* LAYER 1: DEEP NEBULA (SVG FILTERED) */}
+      {/* LAYER 1: DEEP NEBULA */}
       <div ref={nebulaRef} className="absolute inset-[-15%] opacity-40">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(168,139,235,0.15)_0%,transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(79,172,254,0.12)_0%,transparent_60%)]" />
@@ -136,14 +117,11 @@ function CosmicCore() {
         ref={coreRef}
         className="absolute inset-0 flex items-center justify-center"
       >
-        {/* Core Glow */}
         <div className="core-pulse absolute w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(var(--brand-accent-rgb,30,215,96),0.15)_0%,transparent_70%)] blur-[80px]" />
 
-        {/* Volumetric Rings */}
         <div className="absolute w-[800px] h-[800px] rounded-full border border-white/[0.03] animate-spin-slow opacity-20" />
         <div className="absolute w-[600px] h-[600px] rounded-full border border-dashed border-white/[0.05] animate-spin-slow-reverse opacity-30" />
 
-        {/* Floating Halo */}
         <motion.div
           animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 4, repeat: Infinity }}
@@ -151,7 +129,7 @@ function CosmicCore() {
         />
       </div>
 
-      {/* LAYER 4: GLASS SHARDS (3D REFRACTIVE FEEL) */}
+      {/* LAYER 4: GLASS SHARDS */}
       <div ref={shardsRef} className="absolute inset-0">
         {[...Array(8)].map((_, i) => (
           <div
@@ -190,7 +168,6 @@ function CosmicCore() {
         ))}
       </div>
 
-      {/* Atmospheric Fog Filter */}
       <div className="absolute inset-0 bg-neutral-950/20 backdrop-blur-[2px]" />
     </div>
   );
@@ -200,7 +177,17 @@ function CosmicCore() {
 // 2. REUSABLE UI COMPONENTS
 // =================================================================
 
-function GlowCta({ href, children, variant = "primary", className }: any) {
+function GlowCta({
+  href,
+  children,
+  variant = "primary",
+  className,
+}: {
+  href: string;
+  children: React.ReactNode;
+  variant?: "primary" | "secondary";
+  className?: string;
+}) {
   return (
     <Link
       href={href}
@@ -213,6 +200,7 @@ function GlowCta({ href, children, variant = "primary", className }: any) {
       )}
     >
       <div className="relative z-10 flex items-center gap-2">{children}</div>
+
       {variant === "primary" && (
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
       )}
@@ -224,7 +212,7 @@ function GlowCta({ href, children, variant = "primary", className }: any) {
 // 3. MAIN LANDING PAGE
 // =================================================================
 
-export default function LandingPage() {
+export default function Page() {
   const copy = landingPageCopy;
 
   const heroRef = useRef<HTMLDivElement>(null);
@@ -233,7 +221,6 @@ export default function LandingPage() {
   const ctaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // GSAP ENTRANCE SEQUENCE
     const tl = gsap.timeline({ delay: 0.5 });
 
     tl.from(headlineRef.current, {
@@ -280,6 +267,7 @@ export default function LandingPage() {
             <div className="h-10 w-10 md:h-11 md:w-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-xl">
               <Radio className="h-5 w-5 text-[var(--brand-accent)]" />
             </div>
+
             <div>
               <p className="text-[0.5rem] font-black uppercase tracking-[0.3em] text-white/30 leading-none mb-1">
                 {copy.brandEyebrow}
@@ -289,6 +277,7 @@ export default function LandingPage() {
               </h4>
             </div>
           </motion.div>
+
           <div className="flex gap-4">
             <Link
               href="/app"
@@ -301,14 +290,11 @@ export default function LandingPage() {
       </nav>
 
       <main className="relative z-10">
-        {/* ----------------------------------------------------------- */}
-        {/* 1. ULTRA-COMPACT HERO (THE COSMIC CORE)                     */}
-        {/* ----------------------------------------------------------- */}
+        {/* HERO */}
         <section
           ref={heroRef}
           className="relative h-[650px] flex flex-col items-center justify-center text-center gap-8 px-6 overflow-hidden pt-12"
         >
-          {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
             <div className="h-1.5 w-1.5 rounded-full bg-[var(--brand-accent)] shadow-[0_0_10px_var(--brand-accent)] animate-pulse" />
             <span className="text-[0.6rem] font-black uppercase tracking-[0.4em] text-white/60">
@@ -316,7 +302,6 @@ export default function LandingPage() {
             </span>
           </div>
 
-          {/* Aggressive Headline */}
           <h1
             ref={headlineRef}
             className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.85] text-white max-w-5xl"
@@ -328,7 +313,6 @@ export default function LandingPage() {
             </span>
           </h1>
 
-          {/* Sharp Subtitle */}
           <p
             ref={subTextRef}
             className="max-w-xl text-[1rem] leading-relaxed text-white/40 font-medium italic"
@@ -336,7 +320,6 @@ export default function LandingPage() {
             {copy.heroDescription}
           </p>
 
-          {/* Unified CTAs */}
           <div ref={ctaRef} className="flex flex-col sm:flex-row gap-5 pt-4">
             <GlowCta
               href="/app"
@@ -345,6 +328,7 @@ export default function LandingPage() {
               <Play className="h-4 w-4 fill-current mr-2" />
               {copy.primaryCta}
             </GlowCta>
+
             <GlowCta
               href="/nhanDienCamXuc"
               variant="secondary"
@@ -355,7 +339,6 @@ export default function LandingPage() {
             </GlowCta>
           </div>
 
-          {/* Scroll Hint */}
           <motion.div
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -365,11 +348,8 @@ export default function LandingPage() {
           </motion.div>
         </section>
 
-        {/* ----------------------------------------------------------- */}
-        {/* CONTENT SECTIONS STICK CLOSE TO HERO                        */}
-        {/* ----------------------------------------------------------- */}
         <div className="mx-auto max-w-[1400px] px-6 md:px-12 space-y-24 pb-40 -mt-10">
-          {/* Section 2: Mood Discovery Bento */}
+          {/* SECTION: MOOD DISCOVERY */}
           <section className="space-y-10">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
               <div className="space-y-3">
@@ -379,10 +359,12 @@ export default function LandingPage() {
                     Vũ trụ Mood
                   </span>
                 </div>
+
                 <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white">
                   {copy.landingSections.emotions.title}
                 </h2>
               </div>
+
               <p className="max-w-xs text-xs leading-relaxed text-white/40 italic">
                 {copy.landingSections.emotions.description}
               </p>
@@ -401,21 +383,24 @@ export default function LandingPage() {
                       mood.accent,
                     )}
                   />
+
                   <p className="text-[0.7rem] font-black uppercase tracking-widest text-white/30 group-hover:text-white transition-colors">
                     {localizedCopy(mood.title, "vi")}
                   </p>
+
                   <h4 className="text-lg font-black tracking-tight text-white/80">
                     {localizedCopy(mood.title, "vi")}
                   </h4>
                 </motion.div>
               ))}
 
-              {/* Feature Info Card */}
               <div className="col-span-2 p-10 rounded-[3rem] bg-white text-black flex flex-col justify-center gap-4 relative overflow-hidden shadow-[0_30px_70px_rgba(255,255,255,0.1)]">
                 <Sparkles className="h-8 w-8 text-black/20 absolute -right-4 -top-4 scale-150 rotate-12" />
+
                 <h3 className="text-2xl font-black tracking-tighter leading-tight italic">
                   Cảm xúc là mã nguồn âm nhạc.
                 </h3>
+
                 <p className="text-[0.75rem] font-medium leading-relaxed opacity-60">
                   MoodSync AI học từ cảm xúc của bạn để kiến tạo danh sách phát
                   cá nhân hóa tuyệt đối.
@@ -424,9 +409,37 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* Section 3: The Unified Experience */}
+          {/* SECTION: SONGS FROM BACKEND DATABASE */}
+          <section className="space-y-10">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Radio className="h-3.5 w-3.5 text-[var(--brand-accent)]" />
+                  <span className="text-[0.65rem] font-black uppercase tracking-[0.3em] text-[var(--brand-accent)]">
+                    Thư viện nhạc
+                  </span>
+                </div>
+
+                <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white">
+                  Bài hát từ database
+                </h2>
+              </div>
+
+              <p className="max-w-xs text-xs leading-relaxed text-white/40 italic">
+                Danh sách này được lấy trực tiếp từ backend API{" "}
+                <span className="text-white/70">/tracks/</span>.
+              </p>
+            </div>
+
+            <div className="rounded-[3rem] border border-white/10 bg-white/[0.03] p-5 md:p-8 backdrop-blur-xl">
+              <DanhSachBaiHatTuApi />
+            </div>
+          </section>
+
+          {/* SECTION: UNIFIED EXPERIENCE */}
           <section className="relative p-12 md:p-20 rounded-[3.5rem] border border-white/5 bg-[#0a0a0c] overflow-hidden group">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--brand-accent-rgb,30,215,96),transparent)] opacity-[0.03]" />
+
             <div className="grid lg:grid-cols-2 gap-20 items-center relative z-10">
               <div className="space-y-10">
                 <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
@@ -435,12 +448,15 @@ export default function LandingPage() {
                     {copy.landingSections.personalization.eyebrow}
                   </span>
                 </div>
+
                 <h2 className="text-5xl md:text-6xl font-black tracking-tighter leading-none">
                   {copy.landingSections.personalization.title}
                 </h2>
+
                 <p className="text-[1.05rem] text-white/40 leading-relaxed italic">
                   {copy.landingSections.personalization.description}
                 </p>
+
                 <div className="grid grid-cols-2 gap-8 pt-4">
                   <div>
                     <p className="text-4xl font-black tracking-tighter text-white">
@@ -450,6 +466,7 @@ export default function LandingPage() {
                       Nghệ sĩ liên kết
                     </p>
                   </div>
+
                   <div>
                     <p className="text-4xl font-black tracking-tighter text-white">
                       Neural
@@ -461,12 +478,12 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Visual Preview */}
               <div className="relative aspect-[4/3] rounded-[3rem] bg-[#050505] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden">
                 <div className="absolute inset-0 opacity-20">
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full border border-white/10 animate-spin-slow-reverse" />
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-60 h-60 rounded-full border border-white/5 animate-spin-slow" />
                 </div>
+
                 <div className="absolute inset-0 flex items-center justify-center gap-1">
                   {[...Array(8)].map((_, i) => (
                     <motion.div
@@ -485,16 +502,18 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* High Impact Footer CTA */}
+          {/* FOOTER CTA */}
           <section className="text-center py-32 space-y-12">
             <div className="space-y-4">
               <h2 className="text-5xl md:text-7xl font-black tracking-tighter italic">
                 {copy.landingSections.final.title}
               </h2>
+
               <p className="max-w-2xl mx-auto text-white/30 text-[1rem] font-medium leading-relaxed italic">
                 {copy.landingSections.final.description}
               </p>
             </div>
+
             <div className="flex flex-col sm:flex-row justify-center gap-6">
               <GlowCta
                 href="/app"
@@ -502,6 +521,7 @@ export default function LandingPage() {
               >
                 Vào vũ trụ ngay
               </GlowCta>
+
               <GlowCta
                 href="/nhanDienCamXuc"
                 variant="secondary"
@@ -514,26 +534,55 @@ export default function LandingPage() {
         </div>
       </main>
 
-      {/* Global CSS */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
-        @keyframes gradient-slow {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .animate-gradient-slow {
-          background-size: 200% auto;
-          animation: gradient-slow 8s ease infinite;
-        }
-        .animate-spin-slow { animation: spin 15s linear infinite; }
-        .animate-spin-slow-reverse { animation: spin-rev 20s linear infinite; }
-        @keyframes spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { translate(-50%, -50%) rotate(360deg); } }
-        @keyframes spin-rev { from { transform: translate(-50%, -50%) rotate(360deg); } to { translate(-50%, -50%) rotate(0deg); } }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-      `,
+            @keyframes gradient-slow {
+              0% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+
+            .animate-gradient-slow {
+              background-size: 200% auto;
+              animation: gradient-slow 8s ease infinite;
+            }
+
+            .animate-spin-slow {
+              animation: spin 15s linear infinite;
+            }
+
+            .animate-spin-slow-reverse {
+              animation: spin-rev 20s linear infinite;
+            }
+
+            @keyframes spin {
+              from {
+                transform: translate(-50%, -50%) rotate(0deg);
+              }
+              to {
+                transform: translate(-50%, -50%) rotate(360deg);
+              }
+            }
+
+            @keyframes spin-rev {
+              from {
+                transform: translate(-50%, -50%) rotate(360deg);
+              }
+              to {
+                transform: translate(-50%, -50%) rotate(0deg);
+              }
+            }
+
+            .scrollbar-hide::-webkit-scrollbar {
+              display: none;
+            }
+
+            .scrollbar-hide {
+              -ms-overflow-style: none;
+              scrollbar-width: none;
+            }
+          `,
         }}
       />
     </div>
