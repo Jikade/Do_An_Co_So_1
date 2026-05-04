@@ -30,3 +30,17 @@ emotion-music-player/data/images/*
 .env
 .env.local
 .env.*.local
+
+# Python virtual environment
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+.next/
+
+# Env
+.env
+.env.local
