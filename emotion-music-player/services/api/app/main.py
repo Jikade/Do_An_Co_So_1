@@ -17,11 +17,25 @@ app = FastAPI(
     description="Backend service for emotion-aware music recommendation",
 )
 
-Path("/data/mp3").mkdir(parents=True, exist_ok=True)
-Path("/data/images").mkdir(parents=True, exist_ok=True)
+# main.py đang nằm ở:
+# emotion-music-player/services/api/app/main.py
+# parents[3] sẽ trỏ về thư mục:
+# emotion-music-player
 
-app.mount("/media", StaticFiles(directory="/data/mp3"), name="media")
-app.mount("/images", StaticFiles(directory="/data/images"), name="images")
+BASE_DIR = Path(__file__).resolve().parents[3]
+
+MP3_DIR = BASE_DIR / "data" / "mp3"
+IMAGES_DIR = BASE_DIR / "data" / "images"
+
+MP3_DIR.mkdir(parents=True, exist_ok=True)
+IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+print("BASE_DIR =", BASE_DIR)
+print("MP3_DIR =", MP3_DIR)
+print("IMAGES_DIR =", IMAGES_DIR)
+
+app.mount("/media", StaticFiles(directory=str(MP3_DIR)), name="media")
+app.mount("/images", StaticFiles(directory=str(IMAGES_DIR)), name="images")
 
 app.add_middleware(
     CORSMiddleware,

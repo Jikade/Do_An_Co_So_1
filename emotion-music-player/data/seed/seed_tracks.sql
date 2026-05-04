@@ -1,7 +1,39 @@
-INSERT INTO tracks (title, artist, audio_url, duration, emotion, cover_image)
+TRUNCATE tracks RESTART IDENTITY CASCADE;
+
+INSERT INTO tracks (
+    title,
+    artist,
+    audio_url,
+    duration,
+    emotion,
+    cover_image,
+    emotion_scores
+)
 VALUES
-('Happy Song', 'Artist A', 'https://example.com/song1.mp3', 210000, 'happy', '/images/default-cover.png'),
-('Sad Song', 'Artist B', 'https://example.com/song2.mp3', 180000, 'sad', '/images/default-cover.png'),
-('Chill Song', 'Artist C', 'https://example.com/song3.mp3', 220000, 'calm', '/images/default-cover.png'),
-('Focus Song', 'Artist D', 'https://example.com/song4.mp3', 200000, 'focus', '/images/default-cover.png'),
-('Night Song', 'Artist E', 'https://example.com/song5.mp3', 240000, 'nostalgic', '/images/default-cover.png');
+(
+    '50 Năm Về Sau',
+    'Unknown Artist',
+    '/media/50 Năm Về Sau.mp3',
+    210,
+    'calm',
+    '/images/default-cover.png',
+    '{}'
+),
+(
+    'Turn Down For What',
+    'Unknown Artist',
+    '/media/Turn Down For What.mp3',
+    210,
+    'energetic',
+    '/images/default-cover.png',
+    '{}'
+),
+(
+    'Yên Bình Có Quá Đắt Không',
+    'Unknown Artist',
+    '/media/Yên Bình Có Quá Đắt Không.mp3',
+    210,
+    'peaceful',
+    '/images/default-cover.png',
+    '{}'
+);

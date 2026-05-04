@@ -19,7 +19,7 @@ def to_track_out(track: Track) -> TrackOut:
         emotion=track.emotion,
         emotion_label_vi=EMOTION_LABELS_VI.get(track.emotion, track.emotion),
         cover_image=track.cover_image,
-        emotion_scores=track.emotion_scores or {},
+        emotion_scores=track.emotion_scores,
     )
 
 
@@ -30,11 +30,10 @@ def list_tracks(db: Session = Depends(get_db)):
 
 
 @router.get("/{track_id}", response_model=TrackOut)
-def get_track(
-    track_id: int,
-    db: Session = Depends(get_db),
-):
+def get_track(track_id: int, db: Session = Depends(get_db)):
     track = db.query(Track).filter(Track.id == track_id).first()
-    if not track:
+
+    if track is None:
         raise HTTPException(status_code=404, detail="Track not found")
+
     return to_track_out(track)
