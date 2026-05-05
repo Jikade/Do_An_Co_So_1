@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
+import { PlayableSongCard } from "@/components/music/playable-song-card";
 import { getTracks, type UiTrack } from "@/lib/tracks-api";
 
 export function DanhSachBaiHatTuApi() {
@@ -18,21 +20,9 @@ export function DanhSachBaiHatTuApi() {
   if (error) return <p className="text-red-400">{error}</p>;
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
       {tracks.map((track) => (
-        <div key={track.id} className="rounded-xl border border-white/10 p-4">
-          <img
-            src={track.coverUrl}
-            alt={track.title}
-            className="h-24 w-24 rounded-lg object-cover"
-          />
-          <h3 className="mt-2 font-semibold">{track.title}</h3>
-          <p className="text-sm text-white/60">{track.artist}</p>
-          <p className="text-xs text-white/40">
-            {track.emotionLabelVi ?? track.emotion}
-          </p>
-          <audio controls src={track.audioUrl} className="mt-3 w-full" />
-        </div>
+        <PlayableSongCard key={track.id} track={track} />
       ))}
     </div>
   );

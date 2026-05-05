@@ -68,19 +68,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [language, setLanguage] = useState<Language>("vi");
 
-  const [songs, setSongs] = useState<Song[]>(mockSongs);
   const [isLoadingSongs, setIsLoadingSongs] = useState(true);
   const [songError, setSongError] = useState<string | null>(null);
 
-  const [nowPlaying, setNowPlayingState] = useState<Song | null>(
-    mockSongs[0] ?? null,
-  );
-
   const [isPlaying, setIsPlayingState] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [totalDuration, setTotalDuration] = useState(
-    mockSongs[0]?.duration ?? 0,
-  );
+
+  const [songs, setSongs] = useState<Song[]>([]);
+
+  const [nowPlaying, setNowPlayingState] = useState<Song | null>(null);
+
+  const [totalDuration, setTotalDuration] = useState(0);
+
   const [progress, setProgressState] = useState(0);
   const [volume, setVolumeState] = useState(80);
   const [isMuted, setIsMutedState] = useState(false);
@@ -97,13 +96,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setNowPlaying = useCallback((song: Song | null) => {
     setNowPlayingState(song);
+
     setCurrentTime(0);
     setProgressState(0);
 
     if (song) {
       setCurrentTheme(song.theme);
       setCurrentEmotion(song.emotion);
-      setTotalDuration(song.duration);
+      setTotalDuration(song.duration || 0);
+    } else {
+      setIsPlayingState(false);
+      setTotalDuration(0);
     }
   }, []);
 
@@ -119,61 +122,42 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
         if (cancelled) return;
 
-        if (data.length > 0) {
-          setSongs(data);
+        setSongs(data);
 
-          setNowPlayingState((current) => {
-            const nextSong = current
-              ? (data.find((song) => song.id === current.id) ?? data[0])
-              : data[0];
+        setNowPlayingState((current) => {
+          if (!current) return null;
 
-            setCurrentTheme(nextSong.theme);
-            setCurrentEmotion(nextSong.emotion);
-            setTotalDuration(nextSong.duration);
+          const updatedSong = data.find((song) => song.id === current.id);
+
+          if (!updatedSong) {
+            setIsPlayingState(false);
             setCurrentTime(0);
             setProgressState(0);
+            setTotalDuration(0);
+            return null;
+          }
 
-            return nextSong;
-          });
-        } else {
-          setSongs(mockSongs);
+          setCurrentTheme(updatedSong.theme);
+          setCurrentEmotion(updatedSong.emotion);
+          setTotalDuration(updatedSong.duration || 0);
 
-          setNowPlayingState((current) => {
-            const nextSong = current ?? mockSongs[0] ?? null;
-
-            if (nextSong) {
-              setCurrentTheme(nextSong.theme);
-              setCurrentEmotion(nextSong.emotion);
-              setTotalDuration(nextSong.duration);
-            }
-
-            return nextSong;
-          });
-        }
+          return updatedSong;
+        });
       } catch (error) {
-        console.error("Không tải được bài hát từ backend:", error);
+        if (cancelled) return;
 
-        if (!cancelled) {
-          setSongs(mockSongs);
+        setSongs(mockSongs);
+        setNowPlayingState(null);
+        setIsPlayingState(false);
+        setCurrentTime(0);
+        setProgressState(0);
+        setTotalDuration(0);
 
-          setNowPlayingState((current) => {
-            const nextSong = current ?? mockSongs[0] ?? null;
-
-            if (nextSong) {
-              setCurrentTheme(nextSong.theme);
-              setCurrentEmotion(nextSong.emotion);
-              setTotalDuration(nextSong.duration);
-            }
-
-            return nextSong;
-          });
-
-          setSongError(
-            error instanceof Error
-              ? error.message
-              : "Không tải được bài hát từ backend",
-          );
-        }
+        setSongError(
+          error instanceof Error
+            ? error.message
+            : "Không tải được bài hát từ backend",
+        );
       } finally {
         if (!cancelled) {
           setIsLoadingSongs(false);
@@ -284,14 +268,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const audio = audioRef.current;
 
-    if (!audio || !nowPlaying) return;
+    if (!audio) return;
+
+    if (!nowPlaying) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+
+      setCurrentTime(0);
+      setTotalDuration(0);
+      setProgressState(0);
+
+      return;
+    }
 
     audio.src = nowPlaying.audioUrl;
     audio.load();
 
     setCurrentTheme(nowPlaying.theme);
     setCurrentEmotion(nowPlaying.emotion);
-    setTotalDuration(nowPlaying.duration);
+    setTotalDuration(nowPlaying.duration || 0);
     setCurrentTime(0);
     setProgressState(0);
   }, [nowPlaying]);

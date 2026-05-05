@@ -1,0 +1,19 @@
+Metadata-Version: 2.4
+Name: emotion-music-player-api
+Version: 0.1.0
+Summary: FastAPI backend for emotion music player
+Requires-Python: >=3.11
+Requires-Dist: fastapi>=0.115.0
+Requires-Dist: uvicorn[standard]>=0.30.0
+Requires-Dist: sqlalchemy>=2.0.30
+Requires-Dist: psycopg2-binary>=2.9.9
+Requires-Dist: requests>=2.32.0
+Requires-Dist: python-jose[cryptography]>=3.3.0
+Requires-Dist: passlib[bcrypt]>=1.7.4
+Requires-Dist: email-validator>=2.2.0
+Requires-Dist: pydantic-settings>=2.3.4
+Requires-Dist: librosa<0.11,>=0.10
+Requires-Dist: mutagen<2,>=1.47
+Requires-Dist: soundfile<0.13,>=0.12
+Requires-Dist: numpy<2,>=1.26
+Requires-Dist: python-multipart>=0.0.9

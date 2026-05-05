@@ -7,10 +7,20 @@ class TrackOut(BaseModel):
     id: int
     title: str
     artist: str
-    audio_url: str
-    duration: float
 
+    # URL file mp3
+    audio_url: str
+
+    duration: float = 0
+
+    # field cũ của project
     emotion: str | None = None
     emotion_label_vi: str | None = None
+
+    # field mới cho đúng yêu cầu CRUD bài hát
+    mood: str | None = None
+
+    # URL ảnh cover
     cover_image: str | None = None
+
     emotion_scores: dict[str, float] | None = None
