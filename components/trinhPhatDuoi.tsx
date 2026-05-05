@@ -1,266 +1,269 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, VolumeX, Heart, ListMusic, Maximize2, Mic2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
-import { useTheme } from "@/lib/nguCanhGiaoDien"
-import { translations, mockSongs, formatDuration } from "@/lib/duLieuGiaLap"
-import { MoodBadge } from "@/components/huyHieuCamXuc"
-import { QueueDrawer } from "@/components/nganXepPhat"
-import { cn } from "@/lib/tienIch"
+import { useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  Heart,
+  ListMusic,
+  Maximize2,
+  Mic2,
+  Pause,
+  Play,
+  Repeat,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { QueueDrawer } from "@/components/nganXepPhat";
+import { MoodBadge } from "@/components/huyHieuCamXuc";
+import { useTheme } from "@/lib/nguCanhGiaoDien";
+import { formatDuration } from "@/lib/duLieuGiaLap";
+import { getCurrentLyricLine, parseLyrics } from "@/lib/lyrics";
+import { cn } from "@/lib/tienIch";
 
 export function BottomPlayer() {
-  const { language, currentSong, setCurrentSong, isPlaying, setIsPlaying } = useTheme()
-  const t = translations[language]
-  
-  const [progress, setProgress] = useState(35)
-  const [volume, setVolume] = useState(75)
-  const [isMuted, setIsMuted] = useState(false)
-  const [isLiked, setIsLiked] = useState(false)
-  const [shuffle, setShuffle] = useState(false)
-  const [repeat, setRepeat] = useState<"off" | "all" | "one">("off")
-  const [queueOpen, setQueueOpen] = useState(false)
+  const {
+    currentSong,
+    nowPlaying,
+    isPlaying,
+    setIsPlaying,
+    playNext,
+    playPrevious,
+    progress,
+    setProgress,
+    volume,
+    setVolume,
+    isMuted,
+    setIsMuted,
+    currentTime,
+  } = useTheme();
 
-  // Simulated progress
-  useEffect(() => {
-    if (!isPlaying) return
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          handleNext()
-          return 0
-        }
-        return prev + 0.1
-      })
-    }, 100)
-    return () => clearInterval(interval)
-  }, [isPlaying])
+  /**
+   * Quan trọng:
+   * song-card.tsx đang gọi setNowPlaying(playerSong).
+   * Vì vậy bottom player phải ưu tiên nowPlaying.
+   */
+  const songDangPhat = nowPlaying ?? currentSong;
+
+  const [isLiked, setIsLiked] = useState(false);
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState<"off" | "all" | "one">("off");
+  const [queueOpen, setQueueOpen] = useState(false);
+
+  const parsedLyrics = useMemo(() => {
+    return parseLyrics(songDangPhat?.lyrics ?? null);
+  }, [songDangPhat?.lyrics]);
+
+  const currentLyric = useMemo(() => {
+    return getCurrentLyricLine(parsedLyrics, currentTime);
+  }, [parsedLyrics, currentTime]);
+
+  console.log("=== DEBUG LYRIC BOTTOM PLAYER ===");
+  console.log("songDangPhat title:", songDangPhat?.title);
+  console.log("songDangPhat lyrics:", songDangPhat?.lyrics);
+  console.log("parsedLyrics:", parsedLyrics);
+  console.log("currentTime:", currentTime);
+  console.log("progress:", progress);
+  console.log("currentLyric:", currentLyric);
+  console.log("=================================");
 
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying)
-  }
-
-  const handlePrevious = () => {
-    const currentIndex = mockSongs.findIndex((s) => s.id === currentSong?.id)
-    const prevIndex = currentIndex > 0 ? currentIndex - 1 : mockSongs.length - 1
-    setCurrentSong(mockSongs[prevIndex])
-    setProgress(0)
-  }
-
-  const handleNext = () => {
-    const currentIndex = mockSongs.findIndex((s) => s.id === currentSong?.id)
-    const nextIndex = currentIndex < mockSongs.length - 1 ? currentIndex + 1 : 0
-    setCurrentSong(mockSongs[nextIndex])
-    setProgress(0)
-  }
+    setIsPlaying(!isPlaying);
+  };
 
   const toggleRepeat = () => {
-    setRepeat(repeat === "off" ? "all" : repeat === "all" ? "one" : "off")
-  }
+    setRepeat(repeat === "off" ? "all" : repeat === "all" ? "one" : "off");
+  };
 
   const formatTime = (percentage: number, duration: number) => {
-    const totalSeconds = duration
-    const currentSeconds = Math.floor((percentage / 100) * totalSeconds)
-    const currentMin = Math.floor(currentSeconds / 60)
-    const currentSec = currentSeconds % 60
-    return `${currentMin}:${currentSec.toString().padStart(2, "0")}`
-  }
+    const totalSeconds = duration || 0;
+    const currentSeconds = Math.floor((percentage / 100) * totalSeconds);
+    const currentMin = Math.floor(currentSeconds / 60);
+    const currentSec = currentSeconds % 60;
 
-  if (!currentSong) return null
+    return `${currentMin}:${currentSec.toString().padStart(2, "0")}`;
+  };
+
+  if (!songDangPhat) return null;
 
   return (
     <>
-      <div 
-        className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-2xl border-t border-white/10"
-        style={{
-          boxShadow: `0 -10px 50px ${currentSong.palette.primary}30`,
-        }}
-      >
-        {/* Progress bar at top */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-white/10">
-          <div 
-            className="h-full transition-all duration-100"
-            style={{ 
-              width: `${progress}%`,
-              background: `linear-gradient(to right, ${currentSong.palette.primary}, ${currentSong.palette.secondary})`
-            }}
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-background/95 shadow-2xl backdrop-blur-xl">
+        {/* Progress bar trên cùng */}
+        <div className="h-1 w-full bg-white/10">
+          <div
+            className="h-full bg-primary transition-all"
+            style={{ width: `${progress}%` }}
           />
         </div>
 
-        <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
+        <div className="mx-auto flex max-w-screen-2xl items-center gap-4 px-4 py-3">
           {/* Left: Song Info */}
-          <div className="flex items-center gap-3 flex-1 min-w-0 max-w-xs">
-            <Link href="/dangPhat" className="relative flex-shrink-0 group">
-              <div className="relative w-14 h-14 rounded-xl overflow-hidden">
-                <Image
-                  src={currentSong.coverUrl}
-                  alt={currentSong.title}
-                  fill
-                  className="object-cover transition-transform group-hover:scale-105"
-                />
-                {isPlaying && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="flex items-end gap-0.5 h-4">
-                      {[...Array(4)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="w-1 bg-white rounded-full animate-pulse"
-                          style={{
-                            height: `${Math.random() * 100}%`,
-                            animationDelay: `${i * 0.15}s`,
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div 
-                className="absolute -inset-1 rounded-xl opacity-50 blur-xl -z-10"
-                style={{ backgroundColor: currentSong.palette.primary }}
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
+              <Image
+                src={songDangPhat.coverUrl || "/placeholder.svg"}
+                alt={songDangPhat.title}
+                fill
+                className="object-cover"
               />
-            </Link>
-            
+
+              {isPlaying && (
+                <div className="absolute inset-0 flex items-end justify-center gap-0.5 bg-black/20 pb-2">
+                  {[...Array(4)].map((_, i) => (
+                    <span
+                      key={i}
+                      className="w-1 rounded-full bg-white"
+                      style={{
+                        height: `${12 + i * 4}px`,
+                        animation: `musicBar 0.8s ease-in-out infinite ${
+                          i * 0.1
+                        }s`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="min-w-0">
-              <Link href="/dangPhat" className="block">
-                <h4 className="font-semibold text-foreground truncate hover:underline">
-                  {currentSong.title}
-                </h4>
-              </Link>
-              <p className="text-sm text-muted-foreground truncate">{currentSong.artist}</p>
+              <h4 className="truncate font-semibold">{songDangPhat.title}</h4>
+
+              <p className="truncate text-sm text-muted-foreground">
+                {songDangPhat.artist}
+              </p>
+
+              <div className="mt-1">
+                <MoodBadge emotion={songDangPhat.emotion} size="sm" />
+              </div>
             </div>
 
             <Button
               variant="ghost"
               size="icon"
-              className={cn(
-                "hidden sm:flex flex-shrink-0",
-                isLiked && "text-rose-500"
-              )}
               onClick={() => setIsLiked(!isLiked)}
+              className={cn(isLiked && "text-red-500")}
             >
-              <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
+              <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
             </Button>
           </div>
 
-          {/* Center: Controls */}
-          <div className="flex flex-col items-center gap-1 flex-1 max-w-lg">
-            <div className="flex items-center gap-2 md:gap-4">
+          {/* Center: Controls + Progress + Lyrics */}
+          <div className="flex flex-[2] flex-col items-center gap-2">
+            {/* Controls */}
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn(
-                  "hidden md:flex w-8 h-8",
-                  shuffle && "text-primary"
-                )}
                 onClick={() => setShuffle(!shuffle)}
+                className={cn(shuffle && "text-primary")}
               >
-                <Shuffle className="w-4 h-4" />
+                <Shuffle className="h-4 w-4" />
               </Button>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handlePrevious}
-              >
-                <SkipBack className="w-5 h-5" />
+              <Button variant="ghost" size="icon" onClick={playPrevious}>
+                <SkipBack className="h-5 w-5" />
               </Button>
 
               <Button
                 size="icon"
-                className="w-12 h-12 rounded-full"
-                style={{
-                  background: `linear-gradient(135deg, ${currentSong.palette.primary}, ${currentSong.palette.secondary})`,
-                }}
                 onClick={handlePlayPause}
+                className="h-11 w-11 rounded-full"
               >
                 {isPlaying ? (
-                  <Pause className="w-5 h-5 fill-white text-white" />
+                  <Pause className="h-5 w-5" />
                 ) : (
-                  <Play className="w-5 h-5 fill-white text-white ml-0.5" />
+                  <Play className="h-5 w-5 fill-current" />
                 )}
+              </Button>
+
+              <Button variant="ghost" size="icon" onClick={playNext}>
+                <SkipForward className="h-5 w-5" />
               </Button>
 
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleNext}
-              >
-                <SkipForward className="w-5 h-5" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "hidden md:flex w-8 h-8",
-                  repeat !== "off" && "text-primary"
-                )}
                 onClick={toggleRepeat}
+                className={cn(repeat !== "off" && "text-primary")}
               >
-                <Repeat className="w-4 h-4" />
+                <Repeat className="h-4 w-4" />
+
                 {repeat === "one" && (
-                  <span className="absolute text-[8px] font-bold">1</span>
+                  <span className="absolute text-[9px] font-bold">1</span>
                 )}
               </Button>
             </div>
 
-            {/* Progress */}
-            <div className="hidden md:flex items-center gap-2 w-full">
-              <span className="text-xs text-muted-foreground w-10 text-right">
-                {formatTime(progress, currentSong.duration)}
+            {/* Thanh tua nhạc */}
+            <div className="flex w-full max-w-xl items-center gap-2 text-xs text-muted-foreground">
+              <span className="w-10 text-right">
+                {formatTime(progress, songDangPhat.duration)}
               </span>
+
               <Slider
                 value={[progress]}
-                onValueChange={([value]) => setProgress(value)}
+                onValueChange={(value) => setProgress(value[0])}
                 max={100}
                 step={0.1}
                 className="flex-1"
               />
-              <span className="text-xs text-muted-foreground w-10">
-                {formatDuration(currentSong.duration)}
+
+              <span className="w-10">
+                {formatDuration(songDangPhat.duration)}
               </span>
             </div>
+
+            {/* Lyrics nằm dưới thanh tua nhạc */}
+            {currentLyric ? (
+              <div className="w-full max-w-xl rounded-2xl border border-primary/50 bg-primary/20 px-4 py-2 text-center text-sm font-semibold text-foreground shadow-lg">
+                {currentLyric.text}
+              </div>
+            ) : null}
           </div>
 
           {/* Right: Extra Controls */}
-          <div className="hidden md:flex items-center gap-2 flex-1 justify-end max-w-xs">
-            <MoodBadge mood={currentSong.mood} size="sm" />
-
-            <Button variant="ghost" size="icon" className="w-8 h-8">
-              <Mic2 className="w-4 h-4" />
+          <div className="flex flex-1 items-center justify-end gap-2">
+            <Button variant="ghost" size="icon">
+              <Mic2 className="h-4 w-4" />
             </Button>
 
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="w-8 h-8"
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setQueueOpen(true)}
             >
-              <ListMusic className="w-4 h-4" />
+              <ListMusic className="h-4 w-4" />
             </Button>
 
-            <div className="flex items-center gap-2 w-32">
+            <div className="flex w-28 items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
-                className="w-8 h-8"
                 onClick={() => setIsMuted(!isMuted)}
+                className="h-8 w-8"
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="w-4 h-4" />
+                  <VolumeX className="h-4 w-4" />
                 ) : (
-                  <Volume2 className="w-4 h-4" />
+                  <Volume2 className="h-4 w-4" />
                 )}
               </Button>
+
               <Slider
                 value={[isMuted ? 0 : volume]}
-                onValueChange={([value]) => {
-                  setVolume(value)
-                  if (value > 0) setIsMuted(false)
+                onValueChange={(value) => {
+                  setVolume(value[0]);
+
+                  if (value[0] > 0) {
+                    setIsMuted(false);
+                  }
                 }}
                 max={100}
                 step={1}
@@ -268,9 +271,9 @@ export function BottomPlayer() {
               />
             </div>
 
-            <Link href="/dangPhat">
-              <Button variant="ghost" size="icon" className="w-8 h-8">
-                <Maximize2 className="w-4 h-4" />
+            <Link href="/now-playing">
+              <Button variant="ghost" size="icon">
+                <Maximize2 className="h-4 w-4" />
               </Button>
             </Link>
           </div>
@@ -279,5 +282,5 @@ export function BottomPlayer() {
 
       <QueueDrawer open={queueOpen} onOpenChange={setQueueOpen} />
     </>
-  )
+  );
 }

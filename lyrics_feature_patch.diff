@@ -1,0 +1,400 @@
+diff --git a/emotion-music-player/services/api/app/models/track.py b/emotion-music-player/services/api/app/models/track.py
+--- a/emotion-music-player/services/api/app/models/track.py
++++ b/emotion-music-player/services/api/app/models/track.py
+@@
+  cover_image: Mapped[str | None] = mapped_column(Text, nullable=True)
++ lyrics: Mapped[str | None] = mapped_column(Text, nullable=True)
+  emotion_scores: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+ 
+diff --git a/emotion-music-player/services/api/app/schemas/track.py b/emotion-music-player/services/api/app/schemas/track.py
+--- a/emotion-music-player/services/api/app/schemas/track.py
++++ b/emotion-music-player/services/api/app/schemas/track.py
+@@
+-from pydantic import BaseModel, ConfigDict
++from pydantic import BaseModel, ConfigDict
++
++
++class TrackBase(BaseModel):
++ title: str
++ artist: str
++ audio_url: str
++ duration: float = 0
++ emotion: str | None = None
++ cover_image: str | None = None
++ emotion_scores: dict[str, float] | None = None
++ lyrics: str | None = None
++
++
++class TrackCreate(TrackBase):
++ pass
++
++
++class TrackUpdate(BaseModel):
++ title: str | None = None
++ artist: str | None = None
++ audio_url: str | None = None
++ duration: float | None = None
++ emotion: str | None = None
++ cover_image: str | None = None
++ emotion_scores: dict[str, float] | None = None
++ lyrics: str | None = None
+ 
+ class TrackOut(BaseModel):
+@@
+  cover_image: str | None = None
++ lyrics: str | None = None
+ 
+  emotion_scores: dict[str, float] | None = None
+ 
+diff --git a/emotion-music-player/services/api/app/routers/tracks.py b/emotion-music-player/services/api/app/routers/tracks.py
+--- a/emotion-music-player/services/api/app/routers/tracks.py
++++ b/emotion-music-player/services/api/app/routers/tracks.py
+@@
+-from app.schemas.track import TrackOut
++from app.schemas.track import TrackCreate, TrackOut, TrackUpdate
+@@
+   cover_image=track.cover_image,
++  lyrics=track.lyrics,
+   emotion_scores=track.emotion_scores,
+   )
++
++
++def normalize_lyrics(value: str | None) -> str | None:
++ if value is None:
++  return None
++ stripped = value.strip()
++ return stripped or None
++
++
++@router.post("/", response_model=TrackOut, status_code=201)
++def create_track(payload: TrackCreate, db: Session = Depends(get_db)):
++ track = Track(
++  title=payload.title,
++  artist=payload.artist,
++  audio_url=payload.audio_url,
++  duration=payload.duration,
++  emotion=payload.emotion or "relax",
++  cover_image=payload.cover_image,
++  emotion_scores=payload.emotion_scores,
++  lyrics=normalize_lyrics(payload.lyrics),
++ )
++ db.add(track)
++ db.commit()
++ db.refresh(track)
++ return to_track_out(track)
+@@
+ def get_track(track_id: int, db: Session = Depends(get_db)):
+@@
+  return to_track_out(track)
++
++
++@router.put("/{track_id}", response_model=TrackOut)
++def update_track(track_id: int, payload: TrackUpdate, db: Session = Depends(get_db)):
++ track = db.query(Track).filter(Track.id == track_id).first()
++ if track is None:
++  raise HTTPException(status_code=404, detail="Track not found")
++
++ update_data = payload.model_dump(exclude_unset=True)
++ if "lyrics" in update_data:
++  update_data["lyrics"] = normalize_lyrics(update_data["lyrics"])
++
++ for key, value in update_data.items():
++  setattr(track, key, value)
++
++ db.commit()
++ db.refresh(track)
++ return to_track_out(track)
+ 
+diff --git a/emotion-music-player/services/api/alembic/versions/0003_add_track_lyrics.py b/emotion-music-player/services/api/alembic/versions/0003_add_track_lyrics.py
+new file mode 100644
+--- /dev/null
++++ b/emotion-music-player/services/api/alembic/versions/0003_add_track_lyrics.py
+@@
++"""add lyrics to tracks"""
++
++from alembic import op
++import sqlalchemy as sa
++
++
++revision = "0003_add_track_lyrics"
++down_revision = "0002_track_emotion_cover"
++branch_labels = None
++depends_on = None
++
++
++def upgrade() -> None:
++ op.add_column("tracks", sa.Column("lyrics", sa.Text(), nullable=True))
++
++
++def downgrade() -> None:
++ op.drop_column("tracks", "lyrics")
++
+diff --git a/lib/tracks-api.ts b/lib/tracks-api.ts
+--- a/lib/tracks-api.ts
++++ b/lib/tracks-api.ts
+@@
+ import { apiGet, apiRequest, toImageUrl, toMediaUrl } from "@/lib/api-client";
+@@
+  camXuc?: string | null;
++ loiBaiHat?: string | null;
+ };
+@@
+  emotion_scores?: Record<string, number> | null;
++ lyrics?: string | null;
+ };
+@@
+  emotionScores?: Record<string, number> | null;
++ lyrics?: string | null;
+ };
+@@
+   emotionScores: track.emotion_scores ?? null,
++  lyrics: track.lyrics ?? null,
+   };
+ }
+@@
+   camXuc: track.emotion,
++  loiBaiHat: track.lyrics ?? null,
+   };
+ }
++
++export type TrackPayload = {
++ title: string;
++ artist: string;
++ audio_url: string;
++ duration?: number;
++ emotion?: string | null;
++ cover_image?: string | null;
++ emotion_scores?: Record<string, number> | null;
++ lyrics?: string | null;
++};
++
++function normalizePayload(payload: TrackPayload): TrackPayload {
++ return {
++  ...payload,
++  lyrics: payload.lyrics?.trim() ? payload.lyrics : null,
++ };
++}
++
++export async function createTrack(payload: TrackPayload): Promise<UiTrack> {
++ const track = await apiRequest<ApiTrack>("/tracks/", {
++  method: "POST",
++  headers: { "Content-Type": "application/json" },
++  body: JSON.stringify(normalizePayload(payload)),
++ });
++ return mapApiTrackToUiTrack(track);
++}
++
++export async function updateTrack(id: string | number, payload: Partial<TrackPayload>): Promise<UiTrack> {
++ const track = await apiRequest<ApiTrack>(`/tracks/${id}`, {
++  method: "PUT",
++  headers: { "Content-Type": "application/json" },
++  body: JSON.stringify(normalizePayload(payload as TrackPayload)),
++ });
++ return mapApiTrackToUiTrack(track);
++}
++
+diff --git a/lib/lyrics.ts b/lib/lyrics.ts
+new file mode 100644
+--- /dev/null
++++ b/lib/lyrics.ts
+@@
++export type LyricLine = {
++ time: number;
++ text: string;
++};
++
++const LYRIC_LINE_RE = /^(\d{1,2}):(\d{2})(.*)$/;
++
++export function parseLyrics(rawLyrics?: string | null): LyricLine[] {
++ if (!rawLyrics?.trim()) return [];
++
++ return rawLyrics
++  .split(/\r?\n/)
++  .map((line) => line.trim())
++  .filter(Boolean)
++  .map((line) => {
++   const match = line.match(LYRIC_LINE_RE);
++   if (!match) return null;
++
++   const minutes = Number(match[1]);
++   const seconds = Number(match[2]);
++   if (!Number.isFinite(minutes) || !Number.isFinite(seconds) || seconds > 59) {
++    return null;
++   }
++
++   const text = match[3]
++    .trim()
++    .replace(/^♪\s*/, "")
++    .replace(/\s*♪$/, "")
++    .trim();
++
++   return { time: minutes * 60 + seconds, text };
++  })
++  .filter((line): line is LyricLine => Boolean(line && line.text))
++  .sort((a, b) => a.time - b.time);
++}
++
++export function getCurrentLyricLine(lines: LyricLine[], currentTime: number): LyricLine | null {
++ if (!lines.length) return null;
++
++ let left = 0;
++ let right = lines.length - 1;
++ let result: LyricLine | null = null;
++
++ while (left <= right) {
++  const mid = Math.floor((left + right) / 2);
++  if (lines[mid].time <= currentTime) {
++   result = lines[mid];
++   left = mid + 1;
++  } else {
++   right = mid - 1;
++  }
++ }
++
++ return result;
++}
++
+diff --git a/components/trinhPhatDuoi.tsx b/components/trinhPhatDuoi.tsx
+--- a/components/trinhPhatDuoi.tsx
++++ b/components/trinhPhatDuoi.tsx
+@@
+-import { useState, useEffect } from "react"
++import { useMemo, useRef, useState, useEffect } from "react"
+@@
+ import { cn } from "@/lib/tienIch"
++import { getCurrentLyricLine, parseLyrics } from "@/lib/lyrics"
+@@
+ export function BottomPlayer() {
+@@
+  const [queueOpen, setQueueOpen] = useState(false)
++ const audioRef = useRef<HTMLAudioElement | null>(null)
++ const [currentTime, setCurrentTime] = useState(0)
++
++ const parsedLyrics = useMemo(
++  () => parseLyrics(currentSong?.lyrics ?? null),
++  [currentSong?.lyrics],
++ )
++
++ const currentLyric = useMemo(
++  () => getCurrentLyricLine(parsedLyrics, currentTime),
++  [parsedLyrics, currentTime],
++ )
+@@
+- // Simulated progress
+- useEffect(() => {
+- if (!isPlaying) return
+- const interval = setInterval(() => {
+- setProgress((prev) => {
+- if (prev >= 100) {
+- handleNext()
+- return 0
+- }
+- return prev + 0.1
+- })
+- }, 100)
+- return () => clearInterval(interval)
+- }, [isPlaying])
++ useEffect(() => {
++  const audio = audioRef.current
++  if (!audio) return
++
++  if (isPlaying) {
++   audio.play().catch(() => setIsPlaying(false))
++  } else {
++   audio.pause()
++  }
++ }, [isPlaying, currentSong?.id, setIsPlaying])
++
++ const handleAudioTimeUpdate = () => {
++  const audio = audioRef.current
++  if (!audio) return
++  const duration = audio.duration || currentSong.duration || 0
++  const nextTime = audio.currentTime || 0
++  setCurrentTime(nextTime)
++  setProgress(duration ? (nextTime / duration) * 100 : 0)
++ }
++
++ const handleSeek = (value: number[]) => {
++  const nextProgress = value[0]
++  const audio = audioRef.current
++  setProgress(nextProgress)
++  if (!audio) return
++  const duration = audio.duration || currentSong.duration || 0
++  audio.currentTime = (nextProgress / 100) * duration
++ }
+@@
+- setProgress(0)
++ setProgress(0)
++ setCurrentTime(0)
+@@
+- setProgress(0)
++ setProgress(0)
++ setCurrentTime(0)
+@@
+- <Slider value={[progress]} onValueChange={(value) => setProgress(value)} max={100} step={0.1} className="flex-1" />
++ <Slider value={[progress]} onValueChange={handleSeek} max={100} step={0.1} className="flex-1" />
+@@
++ {currentLyric ? (
++  <div className="mx-auto -mt-1 mb-3 max-w-2xl rounded-2xl border border-white/10 bg-black/25 px-4 py-2 text-center text-sm text-white/90 shadow-lg backdrop-blur-xl">
++   {currentLyric.text}
++  </div>
++ ) : null}
++
++ <audio
++  ref={audioRef}
++  src={currentSong.audioUrl}
++  preload="metadata"
++  onTimeUpdate={handleAudioTimeUpdate}
++  onEnded={handleNext}
++ />
++
+diff --git a/app/(app)/quanLyBaiHat/page.tsx b/app/(app)/quanLyBaiHat/page.tsx
+--- a/app/(app)/quanLyBaiHat/page.tsx
++++ b/app/(app)/quanLyBaiHat/page.tsx
+@@
++// Trong form tạo/sửa bài hát, thêm lyrics vào state/payload.
++type SongFormState = {
++ title: string;
++ artist: string;
++ audio_url: string;
++ duration: number;
++ emotion?: string | null;
++ cover_image?: string | null;
++ lyrics: string;
++};
++
++// Khi bắt đầu edit:
++setForm((prev) => ({
++ ...prev,
++ title: selectedTrack.title,
++ artist: selectedTrack.artist,
++ audio_url: selectedTrack.audioUrl,
++ duration: selectedTrack.duration,
++ emotion: selectedTrack.emotion,
++ cover_image: selectedTrack.coverUrl,
++ lyrics: selectedTrack.lyrics ?? "",
++}));
++
++// Trong JSX của form:
++<label className="space-y-2">
++ <span className="text-sm font-medium text-white/80">Lyric đồng bộ thời gian</span>
++ <textarea
++  value={form.lyrics}
++  onChange={(event) => setForm((prev) => ({ ...prev, lyrics: event.target.value }))}
++  rows={8}
++  placeholder={"0:01[RINGING SOUND]\n0:06[♪♪♪]\n0:15♪ The club isn't the best place to find a lover ♪"}
++  className="min-h-40 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition focus:border-[var(--brand-accent)]/50"
++ />
++ <span className="text-xs text-white/45">Không bắt buộc. Để trống thì backend sẽ lưu NULL.</span>
++</label>
++
++// Khi submit create/update:
++const payload = {
++ title: form.title,
++ artist: form.artist,
++ audio_url: form.audio_url,
++ duration: form.duration,
++ emotion: form.emotion,
++ cover_image: form.cover_image,
++ lyrics: form.lyrics.trim() ? form.lyrics : null,
++};

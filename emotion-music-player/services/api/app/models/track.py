@@ -23,6 +23,11 @@ class Track(Base):
     # Lưu đường dẫn ảnh, ví dụ: /images/cover.jpg
     cover_image: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Lưu lyric raw theo format:
+    # 0:01[RINGING SOUND]
+    # 0:15♪ The club isn't the best place to find a lover ♪
+    lyrics: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     emotion_scores: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     interactions = relationship(

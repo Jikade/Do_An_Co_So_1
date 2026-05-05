@@ -32,6 +32,7 @@ export interface Song {
   emotion: Emotion;
   mood: Emotion;
   palette: { primary: string; secondary: string };
+  lyrics?: string | null;
   lyricsVi: string[];
   lyricsEn: string[];
   relatedSongIds: string[];
@@ -1086,9 +1087,17 @@ export type ApiTrack = {
   artist: string;
   audio_url: string;
   duration: number;
+
+  // Backend hiện trả cả emotion và mood
   emotion?: Emotion | string | null;
+  mood?: Emotion | string | null;
+
   emotion_label_vi?: string | null;
   cover_image?: string | null;
+
+  // Quan trọng: nhận lyrics từ API /tracks/
+  lyrics?: string | null;
+
   emotion_scores?: Record<string, number> | null;
 };
 
@@ -1104,9 +1113,15 @@ function chuanHoaCamXuc(emotion?: string | null): Emotion {
     "stressed",
   ];
 
-  if (emotion && allowed.includes(emotion as Emotion)) {
-    return emotion as Emotion;
+  const value = emotion?.toLowerCase().trim();
+
+  if (value && allowed.includes(value as Emotion)) {
+    return value as Emotion;
   }
+
+  // Backend của bạn đang có mood/emotion kiểu relax, focus
+  if (value === "relax") return "calm";
+  if (value === "focus") return "calm";
 
   return "calm";
 }
@@ -1127,7 +1142,7 @@ function layThemeTheoCamXuc(emotion: Emotion): SongTheme {
 }
 
 export function chuyenTrackApiThanhSong(track: ApiTrack): Song {
-  const emotion = chuanHoaCamXuc(track.emotion);
+  const emotion = chuanHoaCamXuc(track.mood || track.emotion);
   const theme = layThemeTheoCamXuc(emotion);
 
   return taoBaiHat({
@@ -1143,6 +1158,10 @@ export function chuyenTrackApiThanhSong(track: ApiTrack): Song {
     audioUrl: track.audio_url ? toMediaUrl(track.audio_url) : "",
     emotion,
     mood: emotion,
+
+    // Quan trọng: truyền lyrics từ backend vào object Song
+    lyrics: track.lyrics ?? null,
+
     lyricsVi: [],
     lyricsEn: [],
     relatedSongIds: [],

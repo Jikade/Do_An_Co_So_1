@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+
 import {
   createSong,
   deleteSong,
@@ -16,12 +17,14 @@ type FormState = {
   title: string;
   artist: string;
   mood: string;
+  lyrics: string;
 };
 
 const emptyForm: FormState = {
   title: "",
   artist: "",
   mood: "relax",
+  lyrics: "",
 };
 
 export default function SongManager() {
@@ -54,6 +57,7 @@ export default function SongManager() {
     const mp3Input = document.getElementById(
       "file_mp3",
     ) as HTMLInputElement | null;
+
     const imageInput = document.getElementById(
       "image",
     ) as HTMLInputElement | null;
@@ -62,8 +66,9 @@ export default function SongManager() {
     if (imageInput) imageInput.value = "";
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+
     setLoading(true);
     setMessage("");
 
@@ -82,6 +87,7 @@ export default function SongManager() {
         title: form.title,
         artist: form.artist,
         mood: form.mood,
+        lyrics: form.lyrics.trim() ? form.lyrics : null,
         file_mp3: mp3File,
         image: imageFile,
       };
@@ -108,11 +114,14 @@ export default function SongManager() {
 
   function handleEdit(song: Song) {
     setEditingSong(song);
+
     setForm({
       title: song.title,
       artist: song.artist,
       mood: song.mood || song.emotion || "relax",
+      lyrics: song.lyrics ?? "",
     });
+
     setMp3File(null);
     setImageFile(null);
     setMessage("");
@@ -120,7 +129,6 @@ export default function SongManager() {
 
   async function handleDelete(song: Song) {
     const ok = window.confirm(`Xoá bài hát "${song.title}"?`);
-
     if (!ok) return;
 
     setLoading(true);
@@ -146,56 +154,62 @@ export default function SongManager() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 p-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4">
       <div>
         <h1 className="text-3xl font-bold">Quản lý bài hát</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Thêm, sửa, xoá bài hát. Mỗi bài hát gồm title, artist, file mp3, image
-          và mood.
+          Thêm, sửa, xoá bài hát. Mỗi bài hát gồm title, artist, file mp3,
+          image, mood và lyric.
         </p>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="grid gap-4 rounded-2xl border bg-card p-5 shadow-sm"
-      >
-        <h2 className="text-xl font-semibold">
+      <section className="rounded-2xl border bg-card p-5 shadow-sm">
+        <h2 className="mb-4 text-xl font-semibold">
           {editingSong ? "Sửa bài hát" : "Thêm bài hát"}
         </h2>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <form onSubmit={handleSubmit} className="grid gap-4">
           <label className="grid gap-2">
             <span className="text-sm font-medium">Tên bài hát</span>
             <input
-              className="rounded-xl border bg-background px-3 py-2"
               value={form.title}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, title: event.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  title: event.target.value,
+                }))
               }
               required
+              className="rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-primary"
             />
           </label>
 
           <label className="grid gap-2">
             <span className="text-sm font-medium">Nghệ sĩ</span>
             <input
-              className="rounded-xl border bg-background px-3 py-2"
               value={form.artist}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, artist: event.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  artist: event.target.value,
+                }))
               }
               required
+              className="rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-primary"
             />
           </label>
 
           <label className="grid gap-2">
             <span className="text-sm font-medium">Mood</span>
             <select
-              className="rounded-xl border bg-background px-3 py-2"
               value={form.mood}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, mood: event.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  mood: event.target.value,
+                }))
               }
+              className="rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-primary"
             >
               {MOODS.map((mood) => (
                 <option key={mood} value={mood}>
@@ -204,9 +218,30 @@ export default function SongManager() {
               ))}
             </select>
           </label>
-        </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+          <label className="grid gap-2">
+            <span className="text-sm font-medium">Lyric đồng bộ thời gian</span>
+
+            <textarea
+              value={form.lyrics}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  lyrics: event.target.value,
+                }))
+              }
+              rows={8}
+              placeholder={
+                "0:01[RINGING SOUND]\n0:06[♪♪♪]\n0:15♪ The club isn't the best place to find a lover ♪\n0:23♪ Drinking fast and then we talk slow ♪"
+              }
+              className="min-h-40 rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+            />
+
+            <span className="text-xs text-muted-foreground">
+              Không bắt buộc. Để trống thì backend sẽ lưu NULL.
+            </span>
+          </label>
+
           <label className="grid gap-2">
             <span className="text-sm font-medium">
               File mp3 {editingSong ? "(để trống nếu không đổi)" : ""}
@@ -214,9 +249,9 @@ export default function SongManager() {
             <input
               id="file_mp3"
               type="file"
-              accept="audio/mpeg,.mp3"
-              className="rounded-xl border bg-background px-3 py-2"
+              accept=".mp3,audio/mpeg"
               onChange={(event) => setMp3File(event.target.files?.[0] || null)}
+              className="rounded-xl border bg-background px-3 py-2"
             />
           </label>
 
@@ -227,43 +262,48 @@ export default function SongManager() {
             <input
               id="image"
               type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="rounded-xl border bg-background px-3 py-2"
+              accept=".jpg,.jpeg,.png,.webp,image/*"
               onChange={(event) =>
                 setImageFile(event.target.files?.[0] || null)
               }
+              className="rounded-xl border bg-background px-3 py-2"
             />
           </label>
-        </div>
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-xl bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-60"
-          >
-            {loading
-              ? "Đang xử lý..."
-              : editingSong
-                ? "Lưu thay đổi"
-                : "Thêm bài hát"}
-          </button>
-
-          {editingSong && (
+          <div className="flex flex-wrap gap-3">
             <button
-              type="button"
-              onClick={resetForm}
-              className="rounded-xl border px-4 py-2 font-medium"
+              type="submit"
+              disabled={loading}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              Huỷ sửa
+              {loading
+                ? "Đang xử lý..."
+                : editingSong
+                  ? "Lưu thay đổi"
+                  : "Thêm bài hát"}
             </button>
-          )}
-        </div>
 
-        {message && <p className="text-sm">{message}</p>}
-      </form>
+            {editingSong && (
+              <button
+                type="button"
+                onClick={resetForm}
+                disabled={loading}
+                className="rounded-xl border px-4 py-2 text-sm font-medium"
+              >
+                Huỷ sửa
+              </button>
+            )}
+          </div>
+        </form>
 
-      <div className="rounded-2xl border bg-card p-5 shadow-sm">
+        {message && (
+          <p className="mt-4 rounded-xl border bg-muted px-3 py-2 text-sm">
+            {message}
+          </p>
+        )}
+      </section>
+
+      <section className="rounded-2xl border bg-card p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-xl font-semibold">Danh sách bài hát</h2>
 
@@ -276,37 +316,47 @@ export default function SongManager() {
           </button>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {songs.map((song) => (
-            <div
+            <article
               key={song.id}
-              className="grid gap-4 rounded-2xl border p-4 md:grid-cols-[96px_1fr_auto]"
+              className="flex flex-col gap-3 rounded-2xl border p-4 md:flex-row md:items-center md:justify-between"
             >
-              <div className="h-24 w-24 overflow-hidden rounded-xl bg-muted">
+              <div className="flex gap-3">
                 {song.cover_image ? (
                   <img
                     src={getAssetUrl(song.cover_image)}
                     alt={song.title}
-                    className="h-full w-full object-cover"
+                    className="h-20 w-20 rounded-xl object-cover"
                   />
                 ) : null}
-              </div>
 
-              <div className="space-y-2">
                 <div>
                   <h3 className="font-semibold">{song.title}</h3>
                   <p className="text-sm text-muted-foreground">{song.artist}</p>
-                  <p className="text-sm">
+                  <p className="text-xs text-muted-foreground">
                     Mood: {song.mood || song.emotion || "unknown"}
                   </p>
-                </div>
 
-                {song.audio_url && (
-                  <audio controls src={getAssetUrl(song.audio_url)} />
-                )}
+                  {song.lyrics ? (
+                    <p className="mt-1 text-xs text-green-600">Có lyric</p>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Chưa có lyric
+                    </p>
+                  )}
+
+                  {song.audio_url && (
+                    <audio
+                      src={getAssetUrl(song.audio_url)}
+                      controls
+                      className="mt-2 w-full max-w-md"
+                    />
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-start gap-2">
+              <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => handleEdit(song)}
@@ -323,16 +373,16 @@ export default function SongManager() {
                   Xoá
                 </button>
               </div>
-            </div>
+            </article>
           ))}
 
           {songs.length === 0 && (
-            <p className="text-sm text-muted-foreground">
+            <p className="rounded-xl border p-4 text-sm text-muted-foreground">
               Chưa có bài hát nào.
             </p>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

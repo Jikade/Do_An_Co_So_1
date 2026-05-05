@@ -7,8 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.track import Track
-from app.schemas.track import TrackOut
+from app.schemas.track import TrackOut, TrackUpdate
 from app.services.music_enrichment import EMOTION_LABELS_VI
+
 
 try:
     from mutagen.mp3 import MP3
@@ -32,17 +33,46 @@ AUDIO_EXTENSIONS = {".mp3"}
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
+def normalize_lyrics(value: str | None) -> str | None:
+    """
+    Chuẩn hoá lyrics trước khi lưu DB.
+
+    - Không gửi lyrics => None
+    - Gửi chuỗi rỗng hoặc toàn khoảng trắng => None
+    - Có nội dung thật => giữ nguyên nội dung sau khi strip 2 đầu
+    """
+    if value is None:
+        return None
+
+    stripped = value.strip()
+    return stripped or None
+
+
+def normalize_text(value: str | None) -> str | None:
+    """
+    Chuẩn hoá text thường như title, artist, mood.
+    Không biến chuỗi rỗng thành None ở mọi nơi, chỉ dùng khi cần.
+    """
+    if value is None:
+        return None
+
+    return value.strip()
+
+
 def to_track_out(track: Track) -> TrackOut:
+    emotion = track.emotion or "relax"
+
     return TrackOut(
         id=track.id,
         title=track.title,
         artist=track.artist,
         audio_url=track.audio_url,
         duration=track.duration or 0,
-        emotion=track.emotion,
-        mood=track.emotion,
-        emotion_label_vi=EMOTION_LABELS_VI.get(track.emotion, track.emotion),
+        emotion=emotion,
+        mood=emotion,
+        emotion_label_vi=EMOTION_LABELS_VI.get(emotion, emotion),
         cover_image=track.cover_image,
+        lyrics=track.lyrics,
         emotion_scores=track.emotion_scores or {},
     )
 
@@ -124,6 +154,7 @@ def create_track(
     title: str = Form(...),
     artist: str = Form(...),
     mood: str = Form("relax"),
+    lyrics: str | None = Form(None),
     file_mp3: UploadFile = File(...),
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -133,13 +164,30 @@ def create_track(
 
     mp3_path = MP3_DIR / mp3_filename
 
+    clean_title = title.strip()
+    clean_artist = artist.strip()
+    clean_mood = mood.strip() or "relax"
+
+    if not clean_title:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tên bài hát không được để trống",
+        )
+
+    if not clean_artist:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tên ca sĩ không được để trống",
+        )
+
     track = Track(
-        title=title.strip(),
-        artist=artist.strip(),
+        title=clean_title,
+        artist=clean_artist,
         audio_url=f"/media/{mp3_filename}",
         duration=get_mp3_duration(mp3_path),
-        emotion=mood.strip() or "relax",
+        emotion=clean_mood,
         cover_image=f"/images/{image_filename}",
+        lyrics=normalize_lyrics(lyrics),
         emotion_scores={},
     )
 
@@ -153,11 +201,7 @@ def create_track(
 @router.put("/{track_id}", response_model=TrackOut)
 def update_track(
     track_id: int,
-    title: str | None = Form(None),
-    artist: str | None = Form(None),
-    mood: str | None = Form(None),
-    file_mp3: UploadFile | None = File(None),
-    image: UploadFile | None = File(None),
+    payload: TrackUpdate,
     db: Session = Depends(get_db),
 ):
     track = db.query(Track).filter(Track.id == track_id).first()
@@ -165,33 +209,56 @@ def update_track(
     if track is None:
         raise HTTPException(status_code=404, detail="Track not found")
 
-    if title is not None:
-        track.title = title.strip()
+    update_data = payload.model_dump(exclude_unset=True)
 
-    if artist is not None:
-        track.artist = artist.strip()
+    # lyrics rỗng thì lưu NULL
+    if "lyrics" in update_data:
+        update_data["lyrics"] = normalize_lyrics(update_data["lyrics"])
 
-    if mood is not None:
-        track.emotion = mood.strip() or "relax"
+    # frontend có thể gửi mood, nhưng DB đang dùng emotion
+    if "mood" in update_data:
+        mood_value = normalize_text(update_data.pop("mood"))
+        update_data["emotion"] = mood_value or "relax"
 
-    if file_mp3 is not None and file_mp3.filename:
-        old_audio_url = track.audio_url
+    # Không lưu emotion_label_vi vì đây là field response, không phải cột DB
+    update_data.pop("emotion_label_vi", None)
 
-        mp3_filename = save_upload_file(file_mp3, MP3_DIR, AUDIO_EXTENSIONS)
-        mp3_path = MP3_DIR / mp3_filename
+    # Chuẩn hoá title/artist nếu có gửi lên
+    if "title" in update_data and update_data["title"] is not None:
+        update_data["title"] = update_data["title"].strip()
 
-        track.audio_url = f"/media/{mp3_filename}"
-        track.duration = get_mp3_duration(mp3_path)
+        if not update_data["title"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tên bài hát không được để trống",
+            )
 
-        delete_file_by_url(old_audio_url)
+    if "artist" in update_data and update_data["artist"] is not None:
+        update_data["artist"] = update_data["artist"].strip()
 
-    if image is not None and image.filename:
-        old_cover_image = track.cover_image
+        if not update_data["artist"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tên ca sĩ không được để trống",
+            )
 
-        image_filename = save_upload_file(image, IMAGES_DIR, IMAGE_EXTENSIONS)
-        track.cover_image = f"/images/{image_filename}"
+    if "emotion" in update_data and update_data["emotion"] is not None:
+        update_data["emotion"] = update_data["emotion"].strip() or "relax"
 
-        delete_file_by_url(old_cover_image)
+    allowed_fields = {
+        "title",
+        "artist",
+        "audio_url",
+        "duration",
+        "emotion",
+        "cover_image",
+        "lyrics",
+        "emotion_scores",
+    }
+
+    for key, value in update_data.items():
+        if key in allowed_fields:
+            setattr(track, key, value)
 
     db.commit()
     db.refresh(track)

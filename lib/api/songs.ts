@@ -9,12 +9,14 @@ export type Song = {
   mood?: string | null;
   emotion_label_vi?: string | null;
   emotion_scores?: Record<string, number> | null;
+  lyrics?: string | null;
 };
 
 export type SongFormInput = {
   title: string;
   artist: string;
   mood: string;
+  lyrics?: string | null;
   file_mp3?: File | null;
   image?: File | null;
 };
@@ -24,7 +26,11 @@ export const API_BASE_URL =
 
 export function getAssetUrl(url?: string | null) {
   if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+
   return `${API_BASE_URL}${url}`;
 }
 
@@ -52,6 +58,10 @@ function buildSongFormData(input: SongFormInput) {
   formData.append("title", input.title);
   formData.append("artist", input.artist);
   formData.append("mood", input.mood);
+
+  // lyrics không bắt buộc.
+  // Nếu rỗng thì backend sẽ normalize thành NULL.
+  formData.append("lyrics", input.lyrics?.trim() ? input.lyrics : "");
 
   if (input.file_mp3) {
     formData.append("file_mp3", input.file_mp3);
