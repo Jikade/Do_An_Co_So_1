@@ -7,7 +7,17 @@ from fastapi.staticfiles import StaticFiles
 from app.db.base import Base
 from app.db.session import engine
 from app.models import user, track, emotion_event, interaction, playlist
-from app.routers import auth, users, emotion, recommend, feedback, tracks, playlists
+from app.routers import (
+    auth,
+    users,
+    emotion,
+    recommend,
+    feedback,
+    tracks,
+    playlists,
+    lyrics_mood,
+)
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -17,13 +27,7 @@ app = FastAPI(
     description="Backend service for emotion-aware music recommendation",
 )
 
-# main.py đang nằm ở:
-# emotion-music-player/services/api/app/main.py
-# parents[3] sẽ trỏ về thư mục:
-# emotion-music-player
-
-BASE_DIR = Path(__file__).resolve().parents[3]
-
+BASE_DIR = Path("/app")
 MP3_DIR = BASE_DIR / "data" / "mp3"
 IMAGES_DIR = BASE_DIR / "data" / "images"
 
@@ -52,11 +56,16 @@ app.include_router(playlists.router, prefix="/playlists", tags=["playlists"])
 app.include_router(emotion.router, prefix="/emotion", tags=["emotion"])
 app.include_router(recommend.router, prefix="/recommend", tags=["recommend"])
 app.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
+app.include_router(lyrics_mood.router, prefix="/lyrics-mood", tags=["lyrics-mood"])
 
 
 @app.get("/")
 def root():
-    return {"service": "emotion-music-player-api", "status": "ok", "docs": "/docs"}
+    return {
+        "service": "emotion-music-player-api",
+        "status": "ok",
+        "docs": "/docs",
+    }
 
 
 @app.get("/health")

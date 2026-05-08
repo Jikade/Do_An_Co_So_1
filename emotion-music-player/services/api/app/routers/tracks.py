@@ -22,7 +22,7 @@ router = APIRouter()
 # File này nằm ở:
 # emotion-music-player/services/api/app/routers/tracks.py
 # parents[4] -> emotion-music-player
-BASE_DIR = Path(__file__).resolve().parents[4]
+BASE_DIR = Path("/app")
 MP3_DIR = BASE_DIR / "data" / "mp3"
 IMAGES_DIR = BASE_DIR / "data" / "images"
 
