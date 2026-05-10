@@ -5,7 +5,11 @@ export const API_BASE_URL =
 
 function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("access_token");
+
+  return (
+    localStorage.getItem("moodsync_access_token") ||
+    localStorage.getItem("access_token")
+  );
 }
 
 type ApiOptions = RequestInit & {

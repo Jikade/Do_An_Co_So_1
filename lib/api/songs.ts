@@ -21,15 +21,19 @@ export type SongFormInput = {
   image?: File | null;
 };
 
-export const API_BASE_URL =
-  typeof window === "undefined"
-    ? process.env.API_INTERNAL_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      "http://api:8000"
-    : process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const normalizeBaseUrl = (url?: string) => {
+  return (url || "http://127.0.0.1:8000").replace(/\/$/, "");
+};
 
-export const PUBLIC_API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+export const API_BASE_URL = normalizeBaseUrl(
+  process.env.API_INTERNAL_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    "http://127.0.0.1:8000",
+);
+
+export const PUBLIC_API_BASE_URL = normalizeBaseUrl(
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000",
+);
 
 export function getAssetUrl(url?: string | null) {
   if (!url) return "";
@@ -42,21 +46,33 @@ export function getAssetUrl(url?: string | null) {
 }
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    cache: "no-store",
-    ...init,
-  });
+  const url = `${API_BASE_URL}${path}`;
+
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      cache: "no-store",
+      ...init,
+    });
+  } catch (error) {
+    throw new Error(
+      `Không kết nối được backend tại ${url}. Chi tiết: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || "API request failed");
+    throw new Error(message || `API request failed: ${response.status}`);
   }
 
   if (response.status === 204) {
     return undefined as T;
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
 function buildSongFormData(input: SongFormInput) {
@@ -81,8 +97,22 @@ function buildSongFormData(input: SongFormInput) {
   return formData;
 }
 
-export function getSongs() {
-  return apiRequest<Song[]>("/tracks/");
+export async function getSongs(): Promise<Song[]> {
+  const url = `${API_BASE_URL}/tracks/`;
+
+  try {
+    const response = await fetch(url, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    return (await response.json()) as Song[];
+  } catch {
+    return [];
+  }
 }
 
 export function createSong(input: SongFormInput) {

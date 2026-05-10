@@ -11,14 +11,16 @@ from app.services.ml_gateway import predict_emotion
 router = APIRouter()
 
 
-@router.post("/predict", response_model=EmotionResponse)
-def predict(
+def _predict_and_save_emotion(
     payload: EmotionRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
+    db: Session,
+    current_user: User,
+) -> EmotionResponse:
     if not payload.face_frame and not payload.voice_clip and not payload.text:
-        raise HTTPException(status_code=400, detail="At least one modality is required")
+        raise HTTPException(
+            status_code=400,
+            detail="At least one modality is required",
+        )
 
     result = predict_emotion(payload.model_dump())
 
@@ -31,10 +33,30 @@ def predict(
         source_text=payload.text,
         per_modality=result.get("per_modality"),
     )
+
     db.add(event)
     db.commit()
 
     return EmotionResponse(**result)
+
+
+@router.post("/predict", response_model=EmotionResponse)
+def predict(
+    payload: EmotionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return _predict_and_save_emotion(payload, db, current_user)
+
+
+# Alias để giữ tương thích với frontend cũ đang gọi /api/emotion/detect
+@router.post("/detect", response_model=EmotionResponse)
+def detect(
+    payload: EmotionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return _predict_and_save_emotion(payload, db, current_user)
 
 
 @router.get("/events/me", response_model=list[EmotionEventOut])

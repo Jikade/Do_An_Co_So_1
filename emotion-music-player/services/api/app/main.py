@@ -4,21 +4,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.core.config import settings
 from app.db.base import Base
 from app.db.session import engine
-from app.models import user, track, emotion_event, interaction, playlist
+from app.models import emotion_event, interaction, playlist, track, user
 from app.routers import (
     auth,
-    users,
     emotion,
-    emotion_detect,
-    recommend,
     feedback,
-    tracks,
-    playlists,
     lyrics_mood,
+    playlists,
+    recommend,
+    tracks,
+    users,
 )
-
 
 Base.metadata.create_all(bind=engine)
 
@@ -31,42 +30,36 @@ app = FastAPI(
 BASE_DIR = Path("/app")
 MP3_DIR = BASE_DIR / "data" / "mp3"
 IMAGES_DIR = BASE_DIR / "data" / "images"
-
 MP3_DIR.mkdir(parents=True, exist_ok=True)
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-
-print("BASE_DIR =", BASE_DIR)
-print("MP3_DIR =", MP3_DIR)
-print("IMAGES_DIR =", IMAGES_DIR)
 
 app.mount("/media", StaticFiles(directory=str(MP3_DIR)), name="media")
 app.mount("/images", StaticFiles(directory=str(IMAGES_DIR)), name="images")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Auth/User APIs
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(users.router, prefix="/users", tags=["users"])
+
+# Music APIs
 app.include_router(tracks.router, prefix="/tracks", tags=["tracks"])
 app.include_router(playlists.router, prefix="/playlists", tags=["playlists"])
 
-# API cũ của hệ thống emotion hiện tại
+# Emotion APIs
+# Route chuẩn hiện tại.
 app.include_router(emotion.router, prefix="/emotion", tags=["emotion"])
 
-# API mới cho chức năng nhận diện cảm xúc bằng ML/NLP
-# Endpoint dùng cho frontend:
-# POST http://localhost:8000/api/emotion/detect
-app.include_router(emotion_detect.router, prefix="/api/emotion", tags=["emotion-detect"])
+# Route alias để giữ tương thích với frontend cũ đang gọi /api/emotion/detect.
+app.include_router(emotion.router, prefix="/api/emotion", tags=["emotion"])
 
-# Endpoint phụ để test nhanh:
-# POST http://localhost:8000/emotion/detect
-app.include_router(emotion_detect.router, prefix="/emotion", tags=["emotion-detect"])
-
+# Recommendation/feedback APIs
 app.include_router(recommend.router, prefix="/recommend", tags=["recommend"])
 app.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
 app.include_router(lyrics_mood.router, prefix="/lyrics-mood", tags=["lyrics-mood"])

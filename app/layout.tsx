@@ -1,13 +1,22 @@
 import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
+
 import { ThemeProvider } from '@/lib/nguCanhGiaoDien'
+import { AuthProvider } from '@/lib/nguCanhXacThuc'
 import './globals.css'
 
 export const metadata: Metadata = {
   title: 'KhoaLisa - Premium mood music',
-  description: 'KhoaLisa la web nhac toi gian, cao cap, tach ro landing page va app nghe nhac de trai nghiem gon, sang va hien dai hon.',
+  description:
+    'KhoaLisa la web nhac toi gian, cao cap, tach ro landing page va app nghe nhac de trai nghiem gon, sang va hien dai hon.',
   generator: 'v0.app',
-  keywords: ['KhoaLisa', 'premium music app', 'mood music', 'dark music ui', 'personalized playlists'],
+  keywords: [
+    'KhoaLisa',
+    'premium music app',
+    'mood music',
+    'dark music ui',
+    'personalized playlists',
+  ],
   authors: [{ name: 'KhoaLisa' }],
   icons: {
     icon: '/img/logo/logo.jpg?v=2',
@@ -30,9 +39,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="vi" className="dark">
-      <body className="font-sans antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+    <html lang="vi" suppressHydrationWarning>
+      <body>
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

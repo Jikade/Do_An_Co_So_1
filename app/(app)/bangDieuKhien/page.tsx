@@ -1,10 +1,21 @@
 import SongCard from "@/components/music/song-card";
-import { getSongs } from "@/lib/api/songs";
+import { getSongs, type Song } from "@/lib/api/songs";
 
 export const dynamic = "force-dynamic";
 
 export default async function BangDieuKhienPage() {
-  const songs = await getSongs();
+  let songs: Song[] = [];
+  let errorMessage: string | null = null;
+
+  try {
+    songs = await getSongs();
+  } catch (error) {
+    console.error("[BangDieuKhienPage] getSongs failed:", error);
+    errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Không thể tải danh sách bài hát.";
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -16,6 +27,13 @@ export default async function BangDieuKhienPage() {
           Không gian nghe của cậu
         </h1>
       </div>
+
+      {errorMessage && (
+        <div className="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-sm text-red-100">
+          Không tải được danh sách bài hát. Backend có thể chưa sẵn sàng.
+          <div className="mt-2 break-all text-red-100/70">{errorMessage}</div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {songs.map((song) => (

@@ -1,49 +1,34 @@
-"use client";
+'use client'
 
-import { AppSidebar } from "@/components/thanhBenUngDung";
-import { AppHeader } from "@/components/dauTrangUngDung";
-import { BottomPlayer } from "@/components/trinhPhatDuoi";
-import { MobileNav } from "@/components/dieuHuongDiDong";
-import { AIAssistantPanel } from "@/components/troLyAI";
-import { useTheme } from "@/lib/nguCanhGiaoDien";
+import { AIAssistantPanel } from '@/components/troLyAI'
+import { RequireAuth } from '@/components/auth/baoVeXacThuc'
+import { AppHeader } from '@/components/dauTrangUngDung'
+import { MobileNav } from '@/components/dieuHuongDiDong'
+import { AppSidebar } from '@/components/thanhBenUngDung'
+import { BottomPlayer } from '@/components/trinhPhatDuoi'
+import { useTheme } from '@/lib/nguCanhGiaoDien'
+import { cn } from '@/lib/tienIch'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { isSidebarCollapsed } = useTheme();
+  const { isSidebarCollapsed } = useTheme()
 
   return (
-    <div className="app-cinematic-shell text-foreground">
-      <div className="app-shell-veils" />
-
-      <AppSidebar />
-
-      <div
-        className="relative transition-[padding] duration-300 md:pl-[var(--app-sidebar-width)]"
-        style={
-          {
-            "--app-sidebar-width": isSidebarCollapsed ? "5.25rem" : "16.5rem",
-          } as React.CSSProperties
-        }
-      >
-        <AppHeader />
-
-        <main className="pb-40 pt-4 md:pb-34 md:pt-5">
-          <div
-            className="mx-auto w-full max-w-[var(--app-content-max)] px-4 transition-[max-width] duration-300 md:px-5 xl:px-7"
-            style={
-              {
-                "--app-content-max": isSidebarCollapsed ? "1660px" : "1540px",
-              } as React.CSSProperties
-            }
-          >
-            {children}
-          </div>
-        </main>
+    <RequireAuth>
+      <div className="min-h-screen bg-background text-foreground">
+        <AppSidebar />
+        <div
+          className={cn(
+            'min-h-screen pb-28 transition-[padding] duration-300',
+            isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-80',
+          )}
+        >
+          <AppHeader />
+          <main className="px-4 pb-10 pt-24 sm:px-6 lg:px-8">{children}</main>
+        </div>
+        <BottomPlayer />
+        <MobileNav />
+        <AIAssistantPanel />
       </div>
-
-      <MobileNav />
-      <AIAssistantPanel />
-
-      <BottomPlayer />
-    </div>
-  );
+    </RequireAuth>
+  )
 }

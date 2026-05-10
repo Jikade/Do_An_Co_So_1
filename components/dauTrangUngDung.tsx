@@ -17,9 +17,10 @@ import {
   Search,
   Settings,
   Sparkles,
-  Waves,
   X,
 } from "lucide-react";
+
+import { LogoutButton } from "@/components/auth/nutDangXuat";
 import { cn } from "@/lib/tienIch";
 import { useTheme } from "@/lib/nguCanhGiaoDien";
 import { mockUser } from "@/lib/duLieuGiaLap";
@@ -78,8 +79,10 @@ export function AppHeader({ className }: AppHeaderProps) {
         <div className="mx-auto flex min-h-[5.1rem] max-w-[1540px] items-center justify-between gap-3 border-b border-white/6 px-4 py-3 md:px-5 xl:px-7">
           <div className="flex min-w-0 items-center gap-3">
             <button
+              type="button"
               onClick={() => setIsMobileMenuOpen(true)}
               className="search-pill rounded-full p-2.5 text-white/70 transition-colors hover:text-white md:hidden"
+              aria-label="Mở menu"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -110,8 +113,10 @@ export function AppHeader({ className }: AppHeaderProps) {
 
           <div className="flex items-center gap-2 md:gap-3">
             <button
+              type="button"
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               className="search-pill rounded-full p-2.5 text-white/65 transition-colors hover:text-white lg:hidden"
+              aria-label={isSearchOpen ? "Đóng tìm kiếm" : "Mở tìm kiếm"}
             >
               {isSearchOpen ? (
                 <X className="h-5 w-5" />
@@ -126,6 +131,7 @@ export function AppHeader({ className }: AppHeaderProps) {
 
             <div ref={premiumRef} className="relative">
               <button
+                type="button"
                 onClick={() => setIsPremiumOpen((prev) => !prev)}
                 className={cn(
                   "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.22em] transition-all",
@@ -201,14 +207,24 @@ export function AppHeader({ className }: AppHeaderProps) {
               className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-2"
             />
 
-            <button className="search-pill relative rounded-full p-2.5 text-white/65 transition-colors hover:text-white">
+            <button
+              type="button"
+              className="search-pill relative rounded-full p-2.5 text-white/65 transition-colors hover:text-white"
+              aria-label="Thông báo"
+            >
               <Bell className="h-5 w-5" />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--brand-accent)]" />
             </button>
 
-            <button className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/8 bg-[linear-gradient(135deg,rgba(30,215,96,0.9),rgba(116,244,160,0.62))] text-sm font-semibold text-[#06120a] shadow-[0_10px_22px_rgba(30,215,96,0.16)]">
+            <button
+              type="button"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/8 bg-[linear-gradient(135deg,rgba(30,215,96,0.9),rgba(116,244,160,0.62))] text-sm font-semibold text-[#06120a] shadow-[0_10px_22px_rgba(30,215,96,0.16)]"
+              aria-label="Tài khoản"
+            >
               M
             </button>
+
+            <LogoutButton className="hidden xl:inline-flex" />
           </div>
         </div>
 
@@ -232,10 +248,10 @@ export function AppHeader({ className }: AppHeaderProps) {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="shell-panel absolute inset-y-0 left-0 w-72 overflow-y-auto border-r border-white/6">
+          <div className="shell-panel absolute inset-y-0 left-0 flex w-72 flex-col overflow-y-auto border-r border-white/6">
             <div className="flex items-center justify-between border-b border-white/6 p-4">
               <div className="flex items-center gap-3">
-                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#090b10] shadow-[0_0_36px_var(--song-glow)] p-1">
+                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#090b10] p-1 shadow-[0_0_36px_var(--song-glow)]">
                   <div className="relative h-full w-full overflow-hidden rounded-xl">
                     <Image
                       src="/img/logo/logo.jpg"
@@ -256,8 +272,10 @@ export function AppHeader({ className }: AppHeaderProps) {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="rounded-xl p-2 text-white/50 transition-colors hover:bg-white/[0.04] hover:text-white"
+                aria-label="Đóng menu"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -277,6 +295,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                     />
                   </div>
                   <button
+                    type="button"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       setIsPremiumOpen(true);
@@ -325,6 +344,10 @@ export function AppHeader({ className }: AppHeaderProps) {
                 })}
               </ul>
             </nav>
+
+            <div className="mt-auto border-t border-white/6 p-4">
+              <LogoutButton className="w-full" />
+            </div>
           </div>
         </div>
       ) : null}
