@@ -1,0 +1,13 @@
+*** emotion-music-player/services/api/app/main.py
+@@
+-from app.routers import auth, users, emotion, recommend, feedback, tracks, playlists
++from app.routers import auth, users, emotion, recommend, feedback, tracks, playlists, emotion_detect
+@@
+ app.include_router(playlists.router, prefix="/playlists", tags=["playlists"])
+ app.include_router(emotion.router, prefix="/emotion", tags=["emotion"])
++
++# API mới cho trang Next.js /nhanDienCamXuc.
++# Giữ prefix /emotion để thuận tiện debug, đồng thời đáp ứng yêu cầu POST /api/emotion/detect.
++app.include_router(emotion_detect.router, prefix="/emotion", tags=["emotion"])
++app.include_router(emotion_detect.router, prefix="/api/emotion", tags=["emotion"])
+ app.include_router(recommend.router, prefix="/recommend", tags=["recommend"])

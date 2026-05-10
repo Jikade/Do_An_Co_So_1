@@ -11,6 +11,7 @@ from app.routers import (
     auth,
     users,
     emotion,
+    emotion_detect,
     recommend,
     feedback,
     tracks,
@@ -53,7 +54,19 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(tracks.router, prefix="/tracks", tags=["tracks"])
 app.include_router(playlists.router, prefix="/playlists", tags=["playlists"])
+
+# API cũ của hệ thống emotion hiện tại
 app.include_router(emotion.router, prefix="/emotion", tags=["emotion"])
+
+# API mới cho chức năng nhận diện cảm xúc bằng ML/NLP
+# Endpoint dùng cho frontend:
+# POST http://localhost:8000/api/emotion/detect
+app.include_router(emotion_detect.router, prefix="/api/emotion", tags=["emotion-detect"])
+
+# Endpoint phụ để test nhanh:
+# POST http://localhost:8000/emotion/detect
+app.include_router(emotion_detect.router, prefix="/emotion", tags=["emotion-detect"])
+
 app.include_router(recommend.router, prefix="/recommend", tags=["recommend"])
 app.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
 app.include_router(lyrics_mood.router, prefix="/lyrics-mood", tags=["lyrics-mood"])

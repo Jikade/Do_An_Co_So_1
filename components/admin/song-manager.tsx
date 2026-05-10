@@ -11,6 +11,8 @@ import {
   updateSong,
 } from "@/lib/api/songs";
 
+import { analyzeLyricsMood, LyricsMoodResult } from "@/lib/api/lyrics-mood";
+
 const MOODS = ["relax", "happy", "sad", "angry", "focus", "romantic"];
 
 type FormState = {
@@ -36,6 +38,10 @@ export default function SongManager() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const [moodLoading, setMoodLoading] = useState(false);
+  const [moodError, setMoodError] = useState("");
+  const [suggestedMoods, setSuggestedMoods] = useState<LyricsMoodResult[]>([]);
+
   async function fetchSongs() {
     const data = await getSongs();
     setSongs(data);
@@ -53,6 +59,8 @@ export default function SongManager() {
     setMp3File(null);
     setImageFile(null);
     setEditingSong(null);
+    setSuggestedMoods([]);
+    setMoodError("");
 
     const mp3Input = document.getElementById(
       "file_mp3",
@@ -64,6 +72,39 @@ export default function SongManager() {
 
     if (mp3Input) mp3Input.value = "";
     if (imageInput) imageInput.value = "";
+  }
+
+  async function handleSuggestMood() {
+    const lyrics = form.lyrics.trim();
+
+    if (lyrics.length < 10) {
+      setMoodError("Vui lòng nhập lyrics dài hơn để phân tích mood.");
+      setSuggestedMoods([]);
+      return;
+    }
+
+    setMoodLoading(true);
+    setMoodError("");
+    setSuggestedMoods([]);
+
+    try {
+      const result = await analyzeLyricsMood(lyrics);
+      setSuggestedMoods(result.moods);
+
+      if (result.moods.length > 0) {
+        setForm((prev) => ({
+          ...prev,
+          mood: result.moods[0].mood,
+        }));
+      } else {
+        setMoodError("Không tìm thấy mood phù hợp.");
+      }
+    } catch (error) {
+      console.error(error);
+      setMoodError("Phân tích mood thất bại. Vui lòng thử lại.");
+    } finally {
+      setMoodLoading(false);
+    }
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -102,7 +143,6 @@ export default function SongManager() {
 
       resetForm();
 
-      // Quan trọng: fetch lại API để dữ liệu mới hiển thị ngay
       await fetchSongs();
     } catch (error) {
       console.error(error);
@@ -125,6 +165,8 @@ export default function SongManager() {
     setMp3File(null);
     setImageFile(null);
     setMessage("");
+    setMoodError("");
+    setSuggestedMoods([]);
   }
 
   async function handleDelete(song: Song) {
@@ -136,8 +178,6 @@ export default function SongManager() {
 
     try {
       await deleteSong(song.id);
-
-      // Quan trọng: fetch lại API sau khi xoá
       await fetchSongs();
 
       if (editingSong?.id === song.id) {
@@ -241,6 +281,82 @@ export default function SongManager() {
               Không bắt buộc. Để trống thì backend sẽ lưu NULL.
             </span>
           </label>
+
+          <div className="rounded-2xl border bg-muted/30 p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSuggestMood}
+                disabled={moodLoading || !form.lyrics.trim()}
+                className="rounded-xl border bg-background px-4 py-2 text-sm font-medium disabled:opacity-60"
+              >
+                {moodLoading
+                  ? "Đang phân tích lyrics..."
+                  : "Đề xuất mood phù hợp"}
+              </button>
+
+              {suggestedMoods.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  Mood tốt nhất đã được tự động chọn vào ô Mood.
+                </span>
+              )}
+            </div>
+
+            {moodError && (
+              <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {moodError}
+              </p>
+            )}
+
+            {suggestedMoods.length > 0 && (
+              <div className="mt-4 grid gap-3">
+                {suggestedMoods.map((item) => (
+                  <div
+                    key={item.mood}
+                    className="rounded-xl border bg-card p-3"
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold">{item.mood}</p>
+
+                        {item.matched_keywords.length > 0 && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Từ khóa: {item.matched_keywords.join(", ")}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold">
+                          {item.confidence}%
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              mood: item.mood,
+                            }))
+                          }
+                          className="rounded-lg border px-2 py-1 text-xs font-medium"
+                        >
+                          Chọn
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${item.confidence}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <label className="grid gap-2">
             <span className="text-sm font-medium">

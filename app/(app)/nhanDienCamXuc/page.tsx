@@ -1,337 +1,239 @@
-'use client'
+"use client"
 
-import { useMemo, useState } from 'react'
-import Link from 'next/link'
+import { useMemo, useState } from "react"
+import { AlertTriangle, Brain, Loader2, Music2, Play, Sparkles, WandSparkles } from "lucide-react"
+
+import { ConfidenceBar } from "@/components/thanhDoTinCay"
+import { MoodBadge } from "@/components/huyHieuCamXuc"
+import { SongCard } from "@/components/theBaiHat"
+import { cn } from "@/lib/tienIch"
+import { useTheme } from "@/lib/nguCanhGiaoDien"
 import {
-  Brain,
-  Camera,
-  ChevronRight,
-  FileText,
-  Loader2,
-  Mic,
-  Play,
-  Sparkles,
-  WandSparkles,
-} from 'lucide-react'
-import { useTheme } from '@/lib/nguCanhGiaoDien'
-import { mockSongs, type Emotion } from '@/lib/duLieuGiaLap'
-import { detectEmotionFromText, localizedLabel, moodModes, tasteProfile } from '@/lib/music-intelligence'
-import { MoodBadge } from '@/components/huyHieuCamXuc'
-import { ConfidenceBar } from '@/components/thanhDoTinCay'
-import { SongCard } from '@/components/theBaiHat'
-import { cn } from '@/lib/tienIch'
+  detectTextEmotion,
+  emotionNameLabel,
+  recommendedTrackToSong,
+  toUiEmotion,
+  type EmotionDetectResponse,
+  type NlpEmotion,
+} from "@/lib/emotion-api"
 
-type DetectionMode = 'text' | 'voice' | 'face'
-
-interface AnalysisLog {
-  id: string
-  mode: DetectionMode
-  emotion: Emotion
-  confidence: number
-  note: string
+const DEFAULT_PROBABILITIES: Record<NlpEmotion, number> = {
+  happy: 0.25,
+  sad: 0.25,
+  angry: 0.25,
+  relaxed: 0.25,
 }
 
-const modeIcon = {
-  text: FileText,
-  voice: Mic,
-  face: Camera,
-}
-
-const defaultPrompts = {
-  vi: {
-    text: 'Hôm nay mình hơi quá tải nhưng vẫn muốn một playlist giúp dịu lại và tập trung hơn.',
-    voice: 'Tông giọng chậm, hơi mệt, cần chuyển sang vùng thư giãn.',
-    face: 'Biểu cảm căng nhẹ quanh mắt, năng lượng thấp, phù hợp với hướng nghe giảm áp.',
-  },
-  en: {
-    text: 'I feel overloaded today but still want a playlist that keeps me calm and focused.',
-    voice: 'Pacing sounds slower and tired, suggesting a calm-down listening direction.',
-    face: 'Facial tension around the eyes with low energy, pointing toward decompression music.',
-  },
-}
+const EXAMPLE_PROMPTS = [
+  "Tôi cảm thấy rất cô đơn và mệt mỏi, chỉ muốn nghe một bài hát nhẹ nhàng.",
+  "Hôm nay tôi vui quá, mọi thứ đều rất tuyệt và tôi muốn nghe nhạc tích cực.",
+  "Tôi đang rất bực mình và khó chịu, cần nhạc để giải tỏa năng lượng.",
+  "Tôi muốn thư giãn sau một ngày dài, tâm trí cần bình yên hơn.",
+]
 
 export default function EmotionDetectionPage() {
-  const {
-    language,
-    currentEmotion,
-    setCurrentEmotion,
-    faceConfidence,
-    voiceConfidence,
-    textConfidence,
-    fusionScore,
-    setConfidences,
-    setNowPlaying,
-    setIsPlaying,
-  } = useTheme()
-
-  const [activeMode, setActiveMode] = useState<DetectionMode>('text')
+  const { language, fusionScore, currentEmotion, setCurrentEmotion, setConfidences, setNowPlaying, setIsPlaying } = useTheme()
+  const [textInput, setTextInput] = useState(EXAMPLE_PROMPTS[0])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [textInput, setTextInput] = useState(defaultPrompts[language].text)
-  const [logs, setLogs] = useState<AnalysisLog[]>([
-    {
-      id: 'log-1',
-      mode: 'voice',
-      emotion: 'romantic',
-      confidence: 83,
-      note: language === 'vi' ? 'Giọng nói mềm, nhịp đều, ưu tiên vocal gần.' : 'Soft tone and stable pacing suggest intimate vocals.',
-    },
-    {
-      id: 'log-2',
-      mode: 'face',
-      emotion: 'calm',
-      confidence: 88,
-      note: language === 'vi' ? 'Biểu cảm thư giãn, hợp lo-fi / chill pop.' : 'Relaxed expression aligns with lo-fi and chill pop.',
-    },
-  ])
+  const [result, setResult] = useState<EmotionDetectResponse | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const recommendedSongs = useMemo(() => mockSongs.filter((song) => song.emotion === currentEmotion).slice(0, 3), [currentEmotion])
+  const probabilities = result?.probabilities ?? DEFAULT_PROBABILITIES
+  const probabilityRows = Object.entries(probabilities) as Array<[NlpEmotion, number]>
+  const detectedUiEmotion = result ? toUiEmotion(result.emotion) : currentEmotion
+  const confidencePercent = result?.confidencePercent ?? fusionScore
+  const recommendedSongs = useMemo(
+    () => (result?.recommendedSongs ?? []).map(recommendedTrackToSong),
+    [result?.recommendedSongs],
+  )
+  const topSong = result?.autoPlaySong ?? result?.recommendedSongs?.[0] ?? null
 
-  const modeCopy = useMemo(() => moodModes.find((item) => item.id === activeMode) ?? moodModes[0], [activeMode])
+  const handleAnalyze = async () => {
+    const cleanText = textInput.trim()
+    if (!cleanText) {
+      setError("Vui lòng nhập nội dung cảm xúc trước khi phân tích.")
+      return
+    }
 
-  const handleAnalyze = () => {
     setIsAnalyzing(true)
+    setError(null)
 
-    window.setTimeout(() => {
-      const emotion = activeMode === 'text' ? detectEmotionFromText(textInput) : activeMode === 'voice' ? 'calm' : 'stressed'
-      const nextFace = activeMode === 'face' ? 93 : 81
-      const nextVoice = activeMode === 'voice' ? 89 : 77
-      const nextText = activeMode === 'text' ? 91 : 79
-      const confidence = activeMode === 'face' ? nextFace : activeMode === 'voice' ? nextVoice : nextText
+    try {
+      const data = await detectTextEmotion(cleanText, 9)
+      setResult(data)
 
-      setConfidences(nextFace, nextVoice, nextText)
-      setCurrentEmotion(emotion)
+      const uiEmotion = toUiEmotion(data.emotion)
+      const confidence = data.confidencePercent ?? Math.round(data.confidence * 100)
+      setCurrentEmotion(uiEmotion)
+      setConfidences(confidence, confidence, confidence)
 
-      const firstTrack = mockSongs.find((song) => song.emotion === emotion) ?? mockSongs[0]
-      setNowPlaying(firstTrack)
-      setIsPlaying(true)
-
-      setLogs((prev) => [
-        {
-          id: `${activeMode}-${Date.now()}`,
-          mode: activeMode,
-          emotion,
-          confidence,
-          note: tasteProfile.recommendationReasons[emotion][language],
-        },
-        ...prev,
-      ].slice(0, 6))
-
+      const autoSong = data.autoPlaySong ?? data.recommendedSongs[0]
+      if (autoSong) {
+        setNowPlaying(recommendedTrackToSong(autoSong))
+        setIsPlaying(true)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể phân tích cảm xúc. Vui lòng kiểm tra backend/ML service.")
+    } finally {
       setIsAnalyzing(false)
-    }, 1600)
+    }
   }
 
   return (
-    <div className="space-y-8 pb-10">
-      <section className="surface-elevated overflow-hidden p-6 md:p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="pill-label text-[0.66rem] text-white/35">Emotion AI</p>
-            <h1 className="mt-4 text-3xl font-bold text-white md:text-4xl">
-              {language === 'vi' ? 'Text, giọng nói, khuôn mặt — ba cửa vào cùng một mood engine.' : 'Text, voice, face — three inputs for one mood engine.'}
-            </h1>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-white/62 md:text-base">
-              {language === 'vi'
-                ? 'Trang này giữ đúng shell tối premium hiện tại, nhưng biến nhận diện cảm xúc thành một khu làm việc thực thụ: đọc mood, chấm confidence, rồi đẩy ngay sang đề xuất và player.'
-                : 'This page keeps the same premium dark shell, while turning emotion detection into a real workspace: read mood, score confidence, then route directly into recommendations and playback.'}
-            </p>
-          </div>
-          <div className="surface-panel min-w-[15rem] p-4">
-            <p className="pill-label text-[0.62rem] text-white/30">Overall fusion</p>
-            <div className="mt-4 flex items-center justify-between gap-3">
-              <MoodBadge emotion={currentEmotion} size="lg" animated />
-              <div className="text-right">
-                <p className="text-3xl font-bold text-white">{fusionScore}%</p>
-                <p className="text-xs text-white/42">{language === 'vi' ? 'Tổng hợp tín hiệu' : 'Combined signal'}</p>
-              </div>
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 lg:px-8">
+      <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-purple-500/15 via-slate-950 to-cyan-500/10 p-6 shadow-2xl shadow-black/20">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/80">
+              <Sparkles className="h-4 w-4" />
+              Emotion AI / NLP tiếng Việt
             </div>
-            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/8">
-              <div className="h-full rounded-full bg-gradient-to-r from-[var(--brand-accent)] via-[var(--song-primary)] to-[var(--song-secondary)]" style={{ width: `${fusionScore}%` }} />
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-white md:text-5xl">Nhận diện cảm xúc từ văn bản</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70 md:text-base">
+                Nhập vài câu mô tả tâm trạng. Backend sẽ gọi ML service, dự đoán cảm xúc, lọc bài hát theo mood trong database và tự động phát bài phù hợp nhất.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-black/25 p-5 backdrop-blur">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-white/60">Cảm xúc hiện tại</p>
+                <div className="mt-2 flex items-center gap-3">
+                  <MoodBadge emotion={detectedUiEmotion} size="lg" />
+                  {result ? <span className="text-sm text-white/70">{emotionNameLabel(result.emotion, language)}</span> : null}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-white/60">Độ tin cậy</p>
+                <p className="text-3xl font-bold text-white">{confidencePercent}%</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)_22rem]">
-        <div className="space-y-4">
-          {moodModes.map((mode) => {
-            const Icon = modeIcon[mode.id]
-            const isActive = activeMode === mode.id
-            return (
+      <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+        <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/10 backdrop-blur">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-2xl bg-cyan-500/15 p-3 text-cyan-200">
+              <Brain className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Văn bản đầu vào</h2>
+              <p className="text-sm text-white/60">Hỗ trợ tiếng Việt có dấu hoặc không dấu.</p>
+            </div>
+          </div>
+
+          <textarea
+            value={textInput}
+            onChange={(event) => setTextInput(event.target.value)}
+            placeholder="Ví dụ: Tôi cảm thấy rất cô đơn và mệt mỏi..."
+            className="min-h-[220px] w-full resize-none rounded-3xl border border-white/10 bg-black/25 p-4 text-base leading-7 text-white outline-none transition placeholder:text-white/35 focus:border-cyan-300/60 focus:ring-4 focus:ring-cyan-300/10"
+          />
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {EXAMPLE_PROMPTS.map((prompt) => (
               <button
-                key={mode.id}
-                onClick={() => {
-                  setActiveMode(mode.id)
-                  setTextInput(defaultPrompts[language][mode.id])
-                }}
-                className={cn(
-                  'surface-panel w-full p-5 text-left transition-all',
-                  isActive && 'ring-1 ring-[var(--brand-accent)]/60 shadow-[0_0_0_1px_rgba(30,215,96,0.16),0_24px_44px_rgba(0,0,0,0.36)]',
-                )}
+                key={prompt}
+                type="button"
+                onClick={() => setTextInput(prompt)}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 transition hover:bg-white/10 hover:text-white"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.04] text-[var(--song-primary)]">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  {isActive && <span className="accent-pill rounded-full px-3 py-1 text-[0.62rem] font-medium">live</span>}
-                </div>
-                <h3 className="mt-4 text-lg font-semibold text-white">{localizedLabel(mode.title, language)}</h3>
-                <p className="mt-3 text-sm leading-7 text-white/56">{localizedLabel(mode.description, language)}</p>
-                <p className="mt-3 text-xs leading-6 text-white/38">{localizedLabel(mode.helper, language)}</p>
+                {prompt.slice(0, 42)}...
               </button>
-            )
-          })}
+            ))}
+          </div>
+
+          {error ? (
+            <div className="mt-4 flex gap-3 rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={handleAnalyze}
+            disabled={isAnalyzing}
+            className={cn(
+              "mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100",
+            )}
+          >
+            {isAnalyzing ? <Loader2 className="h-5 w-5 animate-spin" /> : <WandSparkles className="h-5 w-5" />}
+            {isAnalyzing ? "AI đang phân tích..." : "Phân tích cảm xúc"}
+          </button>
+        </section>
+
+        <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/10 backdrop-blur">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Kết quả NLP</h2>
+              <p className="text-sm text-white/60">Xác suất từng cảm xúc được chuẩn hóa về 100%.</p>
+            </div>
+            {result ? <MoodBadge emotion={detectedUiEmotion} size="md" /> : null}
+          </div>
+
+          <div className="space-y-4">
+            {probabilityRows.map(([emotion, value], index) => {
+              const percent = Math.round(value * 100)
+              const isTop = result?.emotion === emotion
+              return (
+                <div key={emotion} className={cn("rounded-3xl border p-4", isTop ? "border-cyan-300/40 bg-cyan-300/10" : "border-white/10 bg-black/20")}>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="font-medium text-white">{emotionNameLabel(emotion, language)}</span>
+                    <span className="text-white/70">{percent}%</span>
+                  </div>
+                  <ConfidenceBar label={emotionNameLabel(emotion, language)} value={percent} color={index === 0 ? "primary" : index === 1 ? "secondary" : "accent"} />
+                </div>
+              )
+            })}
+          </div>
+
+          {result?.rationale ? <p className="mt-5 rounded-2xl bg-black/25 p-4 text-sm leading-6 text-white/65">{result.rationale}</p> : null}
+        </section>
+      </div>
+
+      <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/10 backdrop-blur">
+        <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-cyan-200">
+              <Music2 className="h-5 w-5" />
+              <span className="text-sm font-medium uppercase tracking-[0.25em]">Recommendation</span>
+            </div>
+            <h2 className="text-2xl font-bold text-white">Bài hát đề xuất</h2>
+            <p className="mt-1 text-sm text-white/60">Bài có điểm cao nhất sẽ được đưa vào player và phát tự động.</p>
+          </div>
+
+          {topSong ? (
+            <div className="flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-100">
+              <Play className="h-4 w-4 fill-current" />
+              Auto-play: {topSong.title}
+            </div>
+          ) : null}
         </div>
 
-        <div className="space-y-6">
-          <div className="surface-elevated p-5 md:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="pill-label text-[0.62rem] text-white/30">Active workspace</p>
-                <h2 className="mt-3 text-2xl font-semibold text-white">{localizedLabel(modeCopy.title, language)}</h2>
-              </div>
-              <span className="search-pill rounded-full px-3 py-1.5 text-xs text-white/54">
-                {activeMode === 'text' ? 'Text prompt' : activeMode === 'voice' ? 'Voice waveform' : 'Camera signal'}
-              </span>
-            </div>
-
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <div className="glass rounded-[1.4rem] p-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-white">
-                  <WandSparkles className="h-4 w-4 text-[var(--brand-accent)]" />
-                  {language === 'vi' ? 'Input zone' : 'Input zone'}
-                </div>
-                <div className="mt-4 rounded-[1.3rem] border border-white/6 bg-black/18 p-4">
-                  {activeMode === 'text' ? (
-                    <textarea
-                      value={textInput}
-                      onChange={(event) => setTextInput(event.target.value)}
-                      className="h-40 w-full resize-none bg-transparent text-sm leading-7 text-white placeholder:text-white/28 focus:outline-none"
-                    />
-                  ) : activeMode === 'voice' ? (
-                    <div className="space-y-4">
-                      <div className="flex h-40 items-center justify-center rounded-[1.2rem] bg-white/[0.03]">
-                        <div className="flex items-center gap-1.5">
-                          {Array.from({ length: 14 }).map((_, index) => (
-                            <span
-                              key={index}
-                              className="w-1.5 rounded-full bg-[var(--song-primary)]/90"
-                              style={{ height: `${18 + ((index % 5) + 1) * 10}px` }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-sm leading-7 text-white/56">{defaultPrompts[language].voice}</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex h-40 items-center justify-center rounded-[1.2rem] border border-[var(--song-primary)]/30 bg-[radial-gradient(circle_at_center,rgba(124,141,255,0.14),transparent_60%)]">
-                        <div className="rounded-full border border-white/10 px-5 py-2 text-sm text-white/72">
-                          {language === 'vi' ? 'Camera preview placeholder' : 'Camera preview placeholder'}
-                        </div>
-                      </div>
-                      <p className="text-sm leading-7 text-white/56">{defaultPrompts[language].face}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="glass rounded-[1.4rem] p-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-white">
-                  <Sparkles className="h-4 w-4 text-[var(--song-primary)]" />
-                  {language === 'vi' ? 'Realtime confidence' : 'Realtime confidence'}
-                </div>
-                <div className="mt-4 space-y-4 rounded-[1.2rem] border border-white/6 bg-black/18 p-4">
-                  <ConfidenceBar label={language === 'vi' ? 'Khuôn mặt' : 'Face'} value={faceConfidence} color="primary" />
-                  <ConfidenceBar label={language === 'vi' ? 'Giọng nói' : 'Voice'} value={voiceConfidence} color="secondary" />
-                  <ConfidenceBar label={language === 'vi' ? 'Văn bản' : 'Text'} value={textConfidence} color="accent" />
-                  <div className="rounded-2xl bg-white/[0.03] p-4">
-                    <p className="pill-label text-[0.58rem] text-white/28">Mood guidance</p>
-                    <p className="mt-3 text-sm leading-7 text-white/56">{tasteProfile.recommendationReasons[currentEmotion][language]}</p>
+        {recommendedSongs.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {recommendedSongs.map((song, index) => {
+              const raw = result?.recommendedSongs[index]
+              return (
+                <div key={song.id} className="space-y-2">
+                  <SongCard song={song} />
+                  <div className="flex items-center justify-between rounded-2xl bg-black/20 px-3 py-2 text-xs text-white/55">
+                    <span>Mood DB: {raw?.mood ?? raw?.emotion ?? "unknown"}</span>
+                    <span>Score: {Math.round(raw?.recommendation_score ?? 0)}%</span>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-              <button
-                onClick={handleAnalyze}
-                className="pill-button pill-button-primary inline-flex items-center gap-2 px-5 py-3 text-sm"
-              >
-                {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                {isAnalyzing ? (language === 'vi' ? 'Đang đọc mood...' : 'Analyzing mood...') : (language === 'vi' ? 'Bắt đầu phân tích' : 'Start analysis')}
-              </button>
-              <Link href="/goiY" className="pill-button pill-button-secondary inline-flex items-center gap-2 px-5 py-3 text-sm text-white/78">
-                {language === 'vi' ? 'Sang gợi ý' : 'Open recommendations'}
-                <ChevronRight className="h-4 w-4" />
-              </Link>
-            </div>
+              )
+            })}
           </div>
-
-          <div className="surface-elevated p-5 md:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="pill-label text-[0.62rem] text-white/30">Play next from this mood</p>
-                <h2 className="mt-2 text-xl font-semibold text-white">{language === 'vi' ? 'Đề xuất nối tiếp ngay sau khi quét' : 'Immediate recommendations after scan'}</h2>
-              </div>
-              <MoodBadge emotion={currentEmotion} size="sm" />
-            </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-3">
-              {recommendedSongs.map((song) => (
-                <SongCard key={song.id} song={song} />
-              ))}
-            </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-white/15 bg-black/15 p-8 text-center text-white/60">
+            Nhập văn bản và bấm “Phân tích cảm xúc” để nhận danh sách bài hát phù hợp.
           </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="surface-panel p-5">
-            <p className="pill-label text-[0.62rem] text-white/30">Current read</p>
-            <div className="mt-4 rounded-[1.4rem] bg-[linear-gradient(180deg,rgba(30,215,96,0.1),rgba(255,255,255,0.03))] p-4">
-              <MoodBadge emotion={currentEmotion} size="lg" animated />
-              <p className="mt-4 text-3xl font-bold text-white">{fusionScore}%</p>
-              <p className="mt-1 text-sm text-white/46">{language === 'vi' ? 'Confidence sau hợp nhất tín hiệu' : 'Confidence after signal fusion'}</p>
-              <p className="mt-4 text-sm leading-7 text-white/56">{tasteProfile.recommendationReasons[currentEmotion][language]}</p>
-            </div>
-          </div>
-
-          <div className="surface-panel p-5">
-            <p className="pill-label text-[0.62rem] text-white/30">Recent scans</p>
-            <div className="mt-4 space-y-3">
-              {logs.map((item) => {
-                const Icon = modeIcon[item.mode]
-                return (
-                  <div key={item.id} className="rounded-[1.2rem] border border-white/6 bg-white/[0.03] p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.04] text-[var(--song-primary)]">
-                          <Icon className="h-4.5 w-4.5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-white">{item.mode.toUpperCase()}</p>
-                          <p className="text-xs text-white/42">{item.confidence}% confidence</p>
-                        </div>
-                      </div>
-                      <MoodBadge emotion={item.emotion} size="sm" />
-                    </div>
-                    <p className="mt-3 text-sm leading-7 text-white/56">{item.note}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="surface-panel p-5">
-            <p className="pill-label text-[0.62rem] text-white/30">Why it fits your taste</p>
-            <div className="mt-4 space-y-3">
-              {tasteProfile.topGenres.slice(0, 3).map((genre) => (
-                <div key={genre.id} className="flex items-center justify-between rounded-2xl border border-white/6 bg-white/[0.03] px-4 py-3">
-                  <p className="text-sm font-medium text-white">{localizedLabel(genre.label, language)}</p>
-                  <span className="text-sm text-white/48">{genre.value}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        )}
       </section>
     </div>
   )

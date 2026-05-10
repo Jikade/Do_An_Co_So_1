@@ -1,0 +1,7 @@
+*** lib/player-song-adapter.ts
+@@
+-  if (raw === "relax") return "calm"
+-  if (raw === "focus") return "calm"
++  if (["relax", "relaxed", "calm", "healing", "sleep", "focus"].includes(raw)) return "calm"
++  if (raw === "lonely") return "sad"
++  if (raw === "angry") return "angry"

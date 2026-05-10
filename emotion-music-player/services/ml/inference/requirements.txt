@@ -1,0 +1,8 @@
+fastapi==0.136.1
+uvicorn==0.46.0
+pydantic==2.13.3
+requests==2.33.1
+# Bật pretrained PhoBERT bằng các dòng dưới. Nếu máy yếu, đặt ENABLE_TRANSFORMERS=0 để dùng lexicon fallback.
+torch>=2.2,<3
+transformers>=4.44,<5
+underthesea>=6.8.4

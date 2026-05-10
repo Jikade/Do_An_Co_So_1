@@ -7,9 +7,9 @@ export type Song = {
   duration?: number;
   emotion?: string | null;
   mood?: string | null;
+  lyrics?: string | null;
   emotion_label_vi?: string | null;
   emotion_scores?: Record<string, number> | null;
-  lyrics?: string | null;
 };
 
 export type SongFormInput = {
@@ -22,6 +22,13 @@ export type SongFormInput = {
 };
 
 export const API_BASE_URL =
+  typeof window === "undefined"
+    ? process.env.API_INTERNAL_BASE_URL ||
+      process.env.NEXT_PUBLIC_API_BASE_URL ||
+      "http://api:8000"
+    : process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
+export const PUBLIC_API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export function getAssetUrl(url?: string | null) {
@@ -31,25 +38,25 @@ export function getAssetUrl(url?: string | null) {
     return url;
   }
 
-  return `${API_BASE_URL}${url}`;
+  return `${PUBLIC_API_BASE_URL}${url}`;
 }
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     cache: "no-store",
     ...init,
   });
 
-  if (!res.ok) {
-    const message = await res.text();
+  if (!response.ok) {
+    const message = await response.text();
     throw new Error(message || "API request failed");
   }
 
-  if (res.status === 204) {
+  if (response.status === 204) {
     return undefined as T;
   }
 
-  return res.json();
+  return response.json();
 }
 
 function buildSongFormData(input: SongFormInput) {
@@ -59,9 +66,9 @@ function buildSongFormData(input: SongFormInput) {
   formData.append("artist", input.artist);
   formData.append("mood", input.mood);
 
-  // lyrics không bắt buộc.
-  // Nếu rỗng thì backend sẽ normalize thành NULL.
-  formData.append("lyrics", input.lyrics?.trim() ? input.lyrics : "");
+  if (input.lyrics !== undefined && input.lyrics !== null) {
+    formData.append("lyrics", input.lyrics);
+  }
 
   if (input.file_mp3) {
     formData.append("file_mp3", input.file_mp3);

@@ -11,6 +11,91 @@ import { landingPageCopy } from "@/lib/vietnamese-home-copy";
 import { cn } from "@/lib/tienIch";
 import { DanhSachBaiHatTuApi } from "@/components/DanhSachBaiHatTuApi";
 
+const GLASS_SHARDS = [
+  {
+    width: "80px",
+    height: "70px",
+    left: "12%",
+    top: "18%",
+    opacity: 0.18,
+    transform: "rotate(24deg)",
+  },
+  {
+    width: "56px",
+    height: "96px",
+    left: "28%",
+    top: "62%",
+    opacity: 0.14,
+    transform: "rotate(118deg)",
+  },
+  {
+    width: "104px",
+    height: "82px",
+    left: "44%",
+    top: "24%",
+    opacity: 0.2,
+    transform: "rotate(72deg)",
+  },
+  {
+    width: "72px",
+    height: "44px",
+    left: "68%",
+    top: "12%",
+    opacity: 0.16,
+    transform: "rotate(144deg)",
+  },
+  {
+    width: "92px",
+    height: "66px",
+    left: "82%",
+    top: "48%",
+    opacity: 0.22,
+    transform: "rotate(210deg)",
+  },
+  {
+    width: "48px",
+    height: "78px",
+    left: "8%",
+    top: "72%",
+    opacity: 0.13,
+    transform: "rotate(305deg)",
+  },
+  {
+    width: "88px",
+    height: "54px",
+    left: "52%",
+    top: "76%",
+    opacity: 0.19,
+    transform: "rotate(18deg)",
+  },
+  {
+    width: "64px",
+    height: "92px",
+    left: "74%",
+    top: "70%",
+    opacity: 0.15,
+    transform: "rotate(255deg)",
+  },
+];
+
+const FRONT_DUST_PARTICLES = [
+  { left: "4%", x: -18, duration: 8 },
+  { left: "12%", x: 16, duration: 9 },
+  { left: "21%", x: -10, duration: 10 },
+  { left: "30%", x: 24, duration: 8.5 },
+  { left: "38%", x: -22, duration: 11 },
+  { left: "45%", x: 12, duration: 9.5 },
+  { left: "52%", x: -16, duration: 10.5 },
+  { left: "59%", x: 20, duration: 8.8 },
+  { left: "66%", x: -12, duration: 9.8 },
+  { left: "73%", x: 18, duration: 10.8 },
+  { left: "79%", x: -24, duration: 8.2 },
+  { left: "84%", x: 14, duration: 9.2 },
+  { left: "89%", x: -18, duration: 10.2 },
+  { left: "94%", x: 10, duration: 11.2 },
+  { left: "98%", x: -14, duration: 8.7 },
+];
+
 // =================================================================
 // 1. ADVANCED COSMIC ATMOSPHERE (6-LAYER VOLUMETRIC SYSTEM)
 // =================================================================
@@ -76,7 +161,7 @@ function CosmicCore() {
       });
 
       return () => window.removeEventListener("mousemove", handleMouseMove);
-    });
+    }, containerRef);
 
     return () => ctx.revert();
   }, []);
@@ -131,39 +216,32 @@ function CosmicCore() {
 
       {/* LAYER 4: GLASS SHARDS */}
       <div ref={shardsRef} className="absolute inset-0">
-        {[...Array(8)].map((_, i) => (
+        {GLASS_SHARDS.map((shard, i) => (
           <div
             key={i}
             className="glass-shard absolute rounded-[2rem] border border-white/10 bg-white/[0.03] backdrop-blur-xl shadow-2xl"
-            style={{
-              width: `${Math.random() * 80 + 30}px`,
-              height: `${Math.random() * 80 + 30}px`,
-              left: `${Math.random() * 90}%`,
-              top: `${Math.random() * 80}%`,
-              opacity: 0.1 + Math.random() * 0.2,
-              rotate: `${Math.random() * 360}deg`,
-            }}
+            style={shard}
           />
         ))}
       </div>
 
       {/* LAYER 5: FRONT DUST PARTICLES */}
       <div className="absolute inset-0 opacity-20">
-        {[...Array(15)].map((_, i) => (
+        {FRONT_DUST_PARTICLES.map((particle, i) => (
           <motion.div
             key={i}
             animate={{
               y: [0, -200],
-              x: [0, (Math.random() - 0.5) * 50],
+              x: [0, particle.x],
               opacity: [0, 0.8, 0],
             }}
             transition={{
-              duration: 8 + Math.random() * 5,
+              duration: particle.duration,
               repeat: Infinity,
               delay: i * 0.4,
             }}
             className="absolute w-1 h-1 bg-white rounded-full blur-[0.5px]"
-            style={{ left: `${Math.random() * 100}%`, top: "110%" }}
+            style={{ left: particle.left, top: "110%" }}
           />
         ))}
       </div>
