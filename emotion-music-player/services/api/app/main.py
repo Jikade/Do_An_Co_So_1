@@ -4,6 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+
+from app.routers import payment_orders
+from app.models import payment_order
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import engine
@@ -22,6 +25,42 @@ from app.routers import (
 )
 
 Base.metadata.create_all(bind=engine)
+from app.core.security import hash_password
+from app.db.session import SessionLocal
+from app.models.user import User
+
+
+ADMIN_EMAIL = "admin@gmail.com"
+ADMIN_PASSWORD = "admin123"
+
+
+def seed_admin_user() -> None:
+    db = SessionLocal()
+    try:
+        admin = db.query(User).filter(User.email == ADMIN_EMAIL).first()
+
+        if admin:
+            admin.password_hash = hash_password(ADMIN_PASSWORD)
+            admin.name = "Admin"
+            admin.role = "admin"
+            admin.is_vip = True
+        else:
+            admin = User(
+                email=ADMIN_EMAIL,
+                password_hash=hash_password(ADMIN_PASSWORD),
+                name="Admin",
+                auth_provider="local",
+                role="admin",
+                is_vip=True,
+            )
+            db.add(admin)
+
+        db.commit()
+    finally:
+        db.close()
+
+
+seed_admin_user()
 
 app = FastAPI(
     title="Emotion Music Player API",
@@ -45,6 +84,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(payment_orders.router, prefix="/payment-orders", tags=["payment-orders"])
 
 # Auth/User APIs
 app.include_router(auth.router, prefix="/auth", tags=["auth"])

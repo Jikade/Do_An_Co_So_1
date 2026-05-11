@@ -22,11 +22,10 @@ import {
   X,
 } from "lucide-react";
 
+import { VipProPayment } from "@/components/vip-pro-payment";
 import { LogoutButton } from "@/components/auth/nutDangXuat";
 import { cn } from "@/lib/tienIch";
 import { useTheme } from "@/lib/nguCanhGiaoDien";
-import { mockUser } from "@/lib/duLieuGiaLap";
-import { localizedCopy, premiumFeatures } from "@/lib/product-upgrade-data";
 import { appShellCopy } from "@/lib/vietnamese-home-copy";
 import { LanguageSwitcher } from "./chuyenNgonNgu";
 import { MoodBadge } from "./huyHieuCamXuc";
@@ -233,63 +232,8 @@ export function AppHeader({ className }: AppHeaderProps) {
               </button>
 
               {isPremiumOpen ? (
-                <div className="absolute right-0 top-[calc(100%+0.75rem)] w-[20rem] rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(37,37,37,0.97),rgba(21,21,21,0.96))] p-4 shadow-[0_28px_70px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="pill-label text-[0.62rem] text-[#ffe59a]/72">
-                        {copy.premium.eyebrow}
-                      </p>
-
-                      <h3 className="mt-2 text-lg font-semibold text-white">
-                        {copy.premium.title}
-                      </h3>
-                    </div>
-
-                    <span className="rounded-full border border-[#f6d365]/25 bg-[#f6d365]/12 px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#ffe59a]">
-                      {mockUser.tier === "vip"
-                        ? "VIP PRO"
-                        : copy.premium.eyebrow}
-                    </span>
-                  </div>
-
-                  <p className="mt-3 text-sm leading-6 text-white/58">
-                    {copy.premium.description}
-                  </p>
-
-                  <div className="mt-4 space-y-2">
-                    {premiumFeatures.map((feature) => (
-                      <div
-                        key={feature.title.en}
-                        className="rounded-2xl border border-white/6 bg-white/[0.03] p-3"
-                      >
-                        <p className="text-sm font-medium text-white">
-                          {localizedCopy(feature.title, "vi")}
-                        </p>
-
-                        <p className="mt-1 text-xs leading-5 text-white/46">
-                          {localizedCopy(feature.detail, "vi")}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 flex gap-2">
-                    <Link
-                      href="/caiDat"
-                      onClick={() => setIsPremiumOpen(false)}
-                      className="pill-button pill-button-primary inline-flex flex-1 items-center justify-center px-4 py-3 text-[0.68rem]"
-                    >
-                      {copy.premium.cta}
-                    </Link>
-
-                    <Link
-                      href="/nhanDienCamXuc"
-                      onClick={() => setIsPremiumOpen(false)}
-                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/78 transition hover:bg-white/[0.08] hover:text-white"
-                    >
-                      {copy.premium.moodAi}
-                    </Link>
-                  </div>
+                <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[22rem] max-w-[calc(100vw-2rem)] rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(37,37,37,0.98),rgba(15,15,18,0.98))] p-5 shadow-[0_28px_70px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
+                  <VipProPayment onClose={() => setIsPremiumOpen(false)} />
                 </div>
               ) : null}
             </div>

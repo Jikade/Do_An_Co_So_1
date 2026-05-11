@@ -46,6 +46,8 @@ class UserOut(BaseModel):
     name: str
     auth_provider: str = "email"
     avatar_url: str | None = None
+    role: str = "user"
+    is_vip: bool = False
 
 
 class TokenResponse(BaseModel):
