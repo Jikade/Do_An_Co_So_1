@@ -1,51 +1,43 @@
-import SongCard from "@/components/music/song-card";
-import { getSongs, type Song } from "@/lib/api/songs";
+import Link from "next/link";
+
+import { FilteredSongGrid } from "@/components/music/filtered-song-grid";
+import { getSongs } from "@/lib/api/songs";
 
 export const dynamic = "force-dynamic";
 
 export default async function BangDieuKhienPage() {
-  let songs: Song[] = [];
-  let errorMessage: string | null = null;
-
-  try {
-    songs = await getSongs();
-  } catch (error) {
-    console.error("[BangDieuKhienPage] getSongs failed:", error);
-    errorMessage =
-      error instanceof Error
-        ? error.message
-        : "Không thể tải danh sách bài hát.";
-  }
+  const songs = await getSongs();
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.25em] text-white/40">
+    <main className="space-y-8">
+      <div className="space-y-3">
+        <Link
+          href="/"
+          className="text-sm font-medium text-white/50 transition hover:text-white"
+        >
           Trang chủ
-        </p>
-        <h1 className="mt-2 text-2xl font-bold text-white">
-          Không gian nghe của cậu
-        </h1>
+        </Link>
+
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.35em] text-white/35">
+            Bảng điều khiển
+          </p>
+
+          <h1 className="mt-2 text-3xl font-black text-white md:text-5xl">
+            Không gian nghe của cậu
+          </h1>
+
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">
+            Dùng thanh lọc bên trên để tìm bài hát, lọc theo mood hoặc chỉ xem
+            các bài đã like.
+          </p>
+        </div>
       </div>
 
-      {errorMessage && (
-        <div className="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-sm text-red-100">
-          Không tải được danh sách bài hát. Backend có thể chưa sẵn sàng.
-          <div className="mt-2 break-all text-red-100/70">{errorMessage}</div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        {songs.map((song) => (
-          <SongCard key={song.id} song={song} />
-        ))}
-      </div>
-
-      {songs.length === 0 && (
-        <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.03] p-10 text-center text-white/60">
-          Chưa có bài hát nào
-        </div>
-      )}
-    </div>
+      <FilteredSongGrid
+        songs={songs}
+        emptyMessage="Không có bài hát nào phù hợp với bộ lọc hiện tại."
+      />
+    </main>
   );
 }

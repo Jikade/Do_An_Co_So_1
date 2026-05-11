@@ -1,12 +1,10 @@
-from pydantic import BaseModel
-
+from pydantic import BaseModel, Field
 from app.schemas.track import TrackOut
 
 
 class RecommendationRequest(BaseModel):
-    user_id: int
-    emotion_state: dict
-    limit: int = 10
+    emotion_state: dict | None = None
+    limit: int = Field(default=12, ge=1, le=50)
 
 
 class RecommendationResponse(BaseModel):

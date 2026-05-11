@@ -1,10 +1,10 @@
-from pydantic import BaseModel, Field
+from typing import Literal
+from pydantic import BaseModel
 
 
 class FeedbackRequest(BaseModel):
-    user_id: int
     track_id: int
-    action: str = Field(..., pattern="^(like|skip|listen)$")
+    action: Literal["like", "skip", "listen", "played"] = "listen"
     listen_ms: float = 0
     emotion_state_at_time: dict | None = None
 

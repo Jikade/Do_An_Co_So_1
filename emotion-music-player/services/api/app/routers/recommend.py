@@ -16,10 +16,11 @@ def recommend(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _ = db
     result = get_recommendations(
+        db=db,
         user_id=current_user.id,
-        emotion_state=payload.emotion_state,
+        emotion_state=payload.emotion_state or {},
         limit=payload.limit,
     )
+
     return RecommendationResponse(**result)

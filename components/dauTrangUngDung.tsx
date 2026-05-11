@@ -9,6 +9,8 @@ import {
   Bell,
   Brain,
   Crown,
+  FilterX,
+  Heart,
   Home,
   LayoutDashboard,
   Library,
@@ -40,18 +42,43 @@ const mobileNavItems = [
   { key: "settings", href: "/caiDat", icon: Settings },
 ] as const;
 
+const MOOD_OPTIONS = [
+  { value: "all", label: "Tất cả mood" },
+  { value: "happy", label: "Vui vẻ" },
+  { value: "sad", label: "Buồn" },
+  { value: "calm", label: "Bình yên" },
+  { value: "angry", label: "Tức giận" },
+  { value: "energetic", label: "Năng động" },
+  { value: "stressed", label: "Căng thẳng" },
+  { value: "romantic", label: "Lãng mạn" },
+  { value: "nostalgic", label: "Hoài niệm" },
+] as const;
+
 interface AppHeaderProps {
   className?: string;
 }
 
 export function AppHeader({ className }: AppHeaderProps) {
-  const { currentEmotion } = useTheme();
+  const {
+    currentEmotion,
+    songSearchQuery,
+    setSongSearchQuery,
+    moodFilter,
+    setMoodFilter,
+    likedOnly,
+    setLikedOnly,
+    clearSongFilters,
+  } = useTheme();
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isPremiumOpen, setIsPremiumOpen] = useState(false);
+
   const pathname = usePathname();
   const premiumRef = useRef<HTMLDivElement | null>(null);
   const copy = appShellCopy;
+
+  const isDashboardPage = pathname === "/bangDieuKhien";
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -61,8 +88,16 @@ export function AppHeader({ className }: AppHeaderProps) {
     };
 
     document.addEventListener("mousedown", handlePointerDown);
+
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, []);
+
+  useEffect(() => {
+    if (!isDashboardPage) {
+      setIsSearchOpen(false);
+      clearSongFilters();
+    }
+  }, [isDashboardPage, clearSongFilters]);
 
   const currentPage =
     copy.pageMeta[pathname as keyof typeof copy.pageMeta] ?? copy.fallbackPage;
@@ -91,39 +126,92 @@ export function AppHeader({ className }: AppHeaderProps) {
               <p className="pill-label text-[0.62rem] text-white/32">
                 {currentPage.eyebrow}
               </p>
+
               <p className="truncate pt-1 text-sm font-medium text-white/82 md:text-base">
                 {currentPage.title}
               </p>
             </div>
           </div>
 
-          <div className="hidden flex-1 items-center justify-center px-4 lg:flex">
-            <div className="relative w-full max-w-lg">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
-              <input
-                type="text"
-                placeholder={copy.searchPlaceholder}
-                className="search-pill h-11 w-full pl-11 pr-24 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
-              />
-              <span className="search-pill pill-label absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[0.62rem] text-white/38">
-                Ctrl K
-              </span>
+          {/* Desktop filter - chỉ hiện ở trang /bangDieuKhien */}
+          {isDashboardPage ? (
+            <div className="hidden flex-1 items-center justify-center px-4 lg:flex">
+              <div className="flex w-full max-w-5xl items-center gap-2">
+                <div className="relative min-w-[220px] flex-1">
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+
+                  <input
+                    type="text"
+                    value={songSearchQuery}
+                    onChange={(event) => setSongSearchQuery(event.target.value)}
+                    placeholder="Tìm bài hát, ca sĩ, mood..."
+                    className="search-pill h-11 w-full pl-11 pr-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                  />
+                </div>
+
+                <select
+                  value={moodFilter}
+                  onChange={(event) =>
+                    setMoodFilter(event.target.value as typeof moodFilter)
+                  }
+                  className="search-pill h-11 min-w-[145px] rounded-full border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                >
+                  {MOOD_OPTIONS.map((mood) => (
+                    <option
+                      key={mood.value}
+                      value={mood.value}
+                      className="bg-zinc-950 text-white"
+                    >
+                      {mood.label}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => setLikedOnly(!likedOnly)}
+                  className={cn(
+                    "inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition",
+                    likedOnly
+                      ? "border-red-400/40 bg-red-500/15 text-red-100"
+                      : "border-white/10 bg-white/[0.04] text-white/65 hover:text-white",
+                  )}
+                >
+                  <Heart
+                    className={cn("h-4 w-4", likedOnly && "fill-current")}
+                  />
+                  Đã like
+                </button>
+
+                <button
+                  type="button"
+                  onClick={clearSongFilters}
+                  className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-white/65 transition hover:text-white"
+                >
+                  <FilterX className="h-4 w-4" />
+                  Xóa lọc
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="hidden flex-1 lg:block" />
+          )}
 
           <div className="flex items-center gap-2 md:gap-3">
-            <button
-              type="button"
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="search-pill rounded-full p-2.5 text-white/65 transition-colors hover:text-white lg:hidden"
-              aria-label={isSearchOpen ? "Đóng tìm kiếm" : "Mở tìm kiếm"}
-            >
-              {isSearchOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Search className="h-5 w-5" />
-              )}
-            </button>
+            {isDashboardPage ? (
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                className="search-pill rounded-full p-2.5 text-white/65 transition-colors hover:text-white lg:hidden"
+                aria-label={isSearchOpen ? "Đóng tìm kiếm" : "Mở tìm kiếm"}
+              >
+                {isSearchOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Search className="h-5 w-5" />
+                )}
+              </button>
+            ) : null}
 
             <div className="hidden md:block">
               <MoodBadge emotion={currentEmotion} size="sm" />
@@ -151,10 +239,12 @@ export function AppHeader({ className }: AppHeaderProps) {
                       <p className="pill-label text-[0.62rem] text-[#ffe59a]/72">
                         {copy.premium.eyebrow}
                       </p>
+
                       <h3 className="mt-2 text-lg font-semibold text-white">
                         {copy.premium.title}
                       </h3>
                     </div>
+
                     <span className="rounded-full border border-[#f6d365]/25 bg-[#f6d365]/12 px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#ffe59a]">
                       {mockUser.tier === "vip"
                         ? "VIP PRO"
@@ -175,6 +265,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                         <p className="text-sm font-medium text-white">
                           {localizedCopy(feature.title, "vi")}
                         </p>
+
                         <p className="mt-1 text-xs leading-5 text-white/46">
                           {localizedCopy(feature.detail, "vi")}
                         </p>
@@ -190,6 +281,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                     >
                       {copy.premium.cta}
                     </Link>
+
                     <Link
                       href="/nhanDienCamXuc"
                       onClick={() => setIsPremiumOpen(false)}
@@ -228,16 +320,63 @@ export function AppHeader({ className }: AppHeaderProps) {
           </div>
         </div>
 
-        {isSearchOpen ? (
-          <div className="border-b border-white/6 px-4 pb-4 lg:hidden">
+        {/* Mobile filter - chỉ hiện ở trang /bangDieuKhien */}
+        {isDashboardPage && isSearchOpen ? (
+          <div className="space-y-3 border-b border-white/6 px-4 pb-4 lg:hidden">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+
               <input
                 type="text"
-                placeholder={copy.searchPlaceholder}
+                value={songSearchQuery}
+                onChange={(event) => setSongSearchQuery(event.target.value)}
+                placeholder="Tìm bài hát, ca sĩ, mood..."
                 className="search-pill h-12 w-full pl-11 pr-4 text-sm text-white placeholder:text-white/32 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                value={moodFilter}
+                onChange={(event) =>
+                  setMoodFilter(event.target.value as typeof moodFilter)
+                }
+                className="search-pill h-11 rounded-full border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none"
+              >
+                {MOOD_OPTIONS.map((mood) => (
+                  <option
+                    key={mood.value}
+                    value={mood.value}
+                    className="bg-zinc-950 text-white"
+                  >
+                    {mood.label}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => setLikedOnly(!likedOnly)}
+                className={cn(
+                  "inline-flex h-11 items-center justify-center gap-2 rounded-full border px-3 text-sm font-semibold transition",
+                  likedOnly
+                    ? "border-red-400/40 bg-red-500/15 text-red-100"
+                    : "border-white/10 bg-white/[0.04] text-white/65",
+                )}
+              >
+                <Heart className={cn("h-4 w-4", likedOnly && "fill-current")} />
+                Đã like
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={clearSongFilters}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-white/65 transition hover:text-white"
+            >
+              <FilterX className="h-4 w-4" />
+              Xóa lọc
+            </button>
           </div>
         ) : null}
       </header>
@@ -248,6 +387,7 @@ export function AppHeader({ className }: AppHeaderProps) {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
+
           <div className="shell-panel absolute inset-y-0 left-0 flex w-72 flex-col overflow-y-auto border-r border-white/6">
             <div className="flex items-center justify-between border-b border-white/6 p-4">
               <div className="flex items-center gap-3">
@@ -262,15 +402,18 @@ export function AppHeader({ className }: AppHeaderProps) {
                     />
                   </div>
                 </div>
+
                 <div>
                   <p className="text-[0.62rem] uppercase tracking-[0.24em] text-white/35">
                     {copy.sidebar.brandEyebrow}
                   </p>
+
                   <span className="text-base font-semibold text-white">
                     MoodSync AI
                   </span>
                 </div>
               </div>
+
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -288,12 +431,14 @@ export function AppHeader({ className }: AppHeaderProps) {
                     <p className="text-[0.62rem] uppercase tracking-[0.24em] text-white/35">
                       {copy.sidebar.moodTitle}
                     </p>
+
                     <MoodBadge
                       emotion={currentEmotion}
                       animated
                       className="mt-4"
                     />
                   </div>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -314,6 +459,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                   const isActive =
                     pathname === item.href ||
                     (item.href !== "/" && pathname.startsWith(item.href));
+
                   const Icon = item.icon;
 
                   return (
@@ -331,6 +477,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                         )}
                       >
                         <Icon className="h-5 w-5" />
+
                         <span className="text-sm font-medium">
                           {item.key === "analytics"
                             ? "Phân tích"

@@ -1,5 +1,7 @@
 import { apiDelete, apiGet, apiPost } from "@/lib/api-client";
 
+export type HistoryAction = "listen" | "played" | "like" | "skip";
+
 export type HistoryTrack = {
   id: number;
   title: string;
@@ -17,7 +19,7 @@ export type ListeningHistoryItem = {
   id: number;
   user_id: number;
   track_id: number;
-  action: "played";
+  action: HistoryAction;
   listen_ms: number;
   emotion_state_at_time?: Record<string, unknown> | null;
   created_at: string;

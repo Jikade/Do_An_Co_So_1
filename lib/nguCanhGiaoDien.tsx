@@ -1,6 +1,5 @@
 "use client";
 
-import { recordListeningHistory } from "@/lib/api/history";
 import {
   createContext,
   useCallback,
@@ -12,8 +11,13 @@ import {
   type ReactNode,
 } from "react";
 
+import { recordListeningHistory } from "@/lib/api/history";
+import { getLikedTracks, likeTrack, unlikeTrack } from "@/lib/api/likes";
+
 import type { SongTheme, Emotion, Language, Song } from "./duLieuGiaLap";
 import { mockSongs, translations, layBaiHatTuBackend } from "./duLieuGiaLap";
+
+type MoodFilter = "all" | Emotion;
 
 interface ThemeContextType {
   currentTheme: SongTheme;
@@ -57,9 +61,28 @@ interface ThemeContextType {
   voiceConfidence: number;
   textConfidence: number;
   setConfidences: (face: number, voice: number, text: number) => void;
+
+  likedTrackIds: number[];
+  isLoadingLikes: boolean;
+  reloadLikedTracks: () => Promise<void>;
+  isTrackLiked: (trackId: string | number | null | undefined) => boolean;
+  toggleLike: (trackId: string | number | null | undefined) => Promise<boolean>;
+
+  songSearchQuery: string;
+  setSongSearchQuery: (value: string) => void;
+  moodFilter: MoodFilter;
+  setMoodFilter: (value: MoodFilter) => void;
+  likedOnly: boolean;
+  setLikedOnly: (value: boolean) => void;
+  clearSongFilters: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
+
+function normalizeTrackId(value: string | number | null | undefined) {
+  const trackId = Number(value);
+  return Number.isInteger(trackId) ? trackId : null;
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -77,7 +100,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
 
   const [songs, setSongs] = useState<Song[]>([]);
-
   const [nowPlaying, setNowPlayingState] = useState<Song | null>(null);
 
   const [totalDuration, setTotalDuration] = useState(0);
@@ -90,6 +112,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [faceConfidence, setFaceConfidence] = useState(92);
   const [voiceConfidence, setVoiceConfidence] = useState(78);
   const [textConfidence, setTextConfidence] = useState(85);
+
+  const [likedTrackIds, setLikedTrackIds] = useState<number[]>([]);
+  const [isLoadingLikes, setIsLoadingLikes] = useState(false);
+
+  const [songSearchQuery, setSongSearchQuery] = useState("");
+  const [moodFilter, setMoodFilter] = useState<MoodFilter>("all");
+  const [likedOnly, setLikedOnly] = useState(false);
 
   const t = useCallback(
     (key: keyof typeof translations.vi) => translations[language][key],
@@ -173,6 +202,95 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  const reloadLikedTracks = useCallback(async () => {
+    try {
+      setIsLoadingLikes(true);
+
+      const data = await getLikedTracks();
+
+      const ids = Array.from(
+        new Set(
+          data.track_ids
+            .map((id) => Number(id))
+            .filter((id) => Number.isInteger(id)),
+        ),
+      );
+
+      setLikedTrackIds(ids);
+    } catch (error) {
+      setLikedTrackIds([]);
+      console.warn("Không tải được danh sách bài hát đã like:", error);
+    } finally {
+      setIsLoadingLikes(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    reloadLikedTracks();
+  }, [reloadLikedTracks]);
+
+  const likedTrackIdSet = useMemo(() => {
+    return new Set(likedTrackIds);
+  }, [likedTrackIds]);
+
+  const isTrackLiked = useCallback(
+    (trackId: string | number | null | undefined) => {
+      const id = normalizeTrackId(trackId);
+
+      if (id === null) return false;
+
+      return likedTrackIdSet.has(id);
+    },
+    [likedTrackIdSet],
+  );
+
+  const toggleLike = useCallback(
+    async (trackId: string | number | null | undefined) => {
+      const id = normalizeTrackId(trackId);
+
+      if (id === null) {
+        throw new Error("Không thể like bài hát không có id hợp lệ.");
+      }
+
+      const wasLiked = likedTrackIdSet.has(id);
+
+      setLikedTrackIds((current) => {
+        if (wasLiked) {
+          return current.filter((item) => item !== id);
+        }
+
+        return current.includes(id) ? current : [...current, id];
+      });
+
+      try {
+        if (wasLiked) {
+          await unlikeTrack(id);
+          return false;
+        }
+
+        await likeTrack(id);
+        return true;
+      } catch (error) {
+        setLikedTrackIds((current) => {
+          if (wasLiked) {
+            return current.includes(id) ? current : [...current, id];
+          }
+
+          return current.filter((item) => item !== id);
+        });
+
+        throw error;
+      }
+    },
+    [likedTrackIdSet],
+  );
+
+  const clearSongFilters = useCallback(() => {
+    setSongSearchQuery("");
+    setMoodFilter("all");
+    setLikedOnly(false);
   }, []);
 
   const timViTriBaiHat = useCallback(
@@ -430,6 +548,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       voiceConfidence,
       textConfidence,
       setConfidences,
+
+      likedTrackIds,
+      isLoadingLikes,
+      reloadLikedTracks,
+      isTrackLiked,
+      toggleLike,
+
+      songSearchQuery,
+      setSongSearchQuery,
+      moodFilter,
+      setMoodFilter,
+      likedOnly,
+      setLikedOnly,
+      clearSongFilters,
     }),
     [
       currentTheme,
@@ -466,6 +598,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       voiceConfidence,
       textConfidence,
       setConfidences,
+
+      likedTrackIds,
+      isLoadingLikes,
+      reloadLikedTracks,
+      isTrackLiked,
+      toggleLike,
+
+      songSearchQuery,
+      moodFilter,
+      likedOnly,
+      clearSongFilters,
     ],
   );
 

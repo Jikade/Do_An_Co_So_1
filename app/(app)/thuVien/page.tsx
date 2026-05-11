@@ -1,4 +1,6 @@
-import SongCard from "@/components/music/song-card";
+import Link from "next/link";
+
+import { FilteredSongGrid } from "@/components/music/filtered-song-grid";
 import { getSongs } from "@/lib/api/songs";
 
 export const dynamic = "force-dynamic";
@@ -7,27 +9,30 @@ export default async function ThuVienPage() {
   const songs = await getSongs();
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.25em] text-white/40">
+    <main className="space-y-8">
+      <div className="space-y-3">
+        <Link
+          href="/"
+          className="text-sm font-medium text-white/50 transition hover:text-white"
+        >
           Trang chủ
-        </p>
-        <h1 className="mt-2 text-2xl font-bold text-white">
-          Không gian nghe của cậu
-        </h1>
-      </div>
+        </Link>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        {songs.map((song) => (
-          <SongCard key={song.id} song={song} />
-        ))}
-      </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.35em] text-white/35">
+            Thư viện
+          </p>
 
-      {songs.length === 0 && (
-        <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.03] p-10 text-center text-white/60">
-          Chưa có bài hát nào
+          <h1 className="mt-2 text-3xl font-black text-white md:text-5xl">
+            Không gian nghe của cậu
+          </h1>
         </div>
-      )}
-    </div>
+      </div>
+
+      <FilteredSongGrid
+        songs={songs}
+        emptyMessage="Không có bài hát nào phù hợp với bộ lọc hiện tại."
+      />
+    </main>
   );
 }
