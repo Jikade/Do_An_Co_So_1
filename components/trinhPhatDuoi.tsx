@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -29,6 +29,10 @@ import { useTheme } from "@/lib/nguCanhGiaoDien";
 import { formatDuration } from "@/lib/duLieuGiaLap";
 import { getCurrentLyricLine, parseLyrics } from "@/lib/lyrics";
 import { cn } from "@/lib/tienIch";
+import { useAuth } from "@/lib/nguCanhXacThuc";
+
+const VIP_DOWNLOAD_MESSAGE =
+  "Hãy mua gói VIP PRO để tải nhạc độc quyền từ chúng tôi";
 
 export function BottomPlayer() {
   const {
@@ -48,6 +52,14 @@ export function BottomPlayer() {
     isTrackLiked,
     toggleLike,
   } = useTheme();
+
+  const { user, isAuthenticated, refreshUser } = useAuth();
+
+  const canDownloadVipPro = Boolean(isAuthenticated && user?.is_vip);
+
+  const [vipDownloadMessage, setVipDownloadMessage] = useState<string | null>(
+    null,
+  );
 
   /**
    * song-card.tsx đang gọi setNowPlaying(playerSong).
@@ -70,6 +82,16 @@ export function BottomPlayer() {
   const currentLyric = useMemo(() => {
     return getCurrentLyricLine(parsedLyrics, currentTime);
   }, [parsedLyrics, currentTime]);
+
+  useEffect(() => {
+    if (!vipDownloadMessage) return;
+
+    const timeout = window.setTimeout(() => {
+      setVipDownloadMessage(null);
+    }, 3500);
+
+    return () => window.clearTimeout(timeout);
+  }, [vipDownloadMessage]);
 
   async function handleToggleLike() {
     if (!songDangPhat || isLikeSaving) return;
@@ -111,6 +133,19 @@ export function BottomPlayer() {
 
   async function handleDownloadSong() {
     if (!songDangPhat?.audioUrl) return;
+
+    try {
+      await refreshUser();
+    } catch (error) {
+      console.warn("Không refresh được thông tin user:", error);
+    }
+
+    if (!isAuthenticated || !user?.is_vip) {
+      setVipDownloadMessage(VIP_DOWNLOAD_MESSAGE);
+      return;
+    }
+
+    setVipDownloadMessage(null);
 
     const fileName = buildDownloadFileName();
 
@@ -334,15 +369,30 @@ export function BottomPlayer() {
 
             {/* Right: Extra Controls */}
             <div className="flex flex-1 items-center justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={handleDownloadSong}
-                title="Tải bài hát về máy"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleDownloadSong}
+                  title={
+                    canDownloadVipPro
+                      ? "Tải bài hát về máy"
+                      : "Cần VIP PRO để tải nhạc"
+                  }
+                  className={cn(
+                    !canDownloadVipPro && "text-amber-300 hover:text-amber-200",
+                  )}
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+
+                {vipDownloadMessage ? (
+                  <div className="absolute bottom-[calc(100%+0.75rem)] right-0 z-50 w-72 rounded-2xl border border-amber-300/30 bg-slate-950/95 p-4 text-sm font-medium leading-6 text-amber-100 shadow-2xl shadow-black/40">
+                    {vipDownloadMessage}
+                  </div>
+                ) : null}
+              </div>
 
               <Button variant="ghost" size="icon">
                 <Mic2 className="h-4 w-4" />

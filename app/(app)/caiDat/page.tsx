@@ -1,716 +1,387 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
-import { User, Palette, Music, Languages, Bell, Shield, Sliders, Link2, Save, Check, Camera, Mic, FileText, Smartphone, Monitor, Moon, Sun, Volume2, Zap, Heart, Globe, Brain, FolderSync, Database } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Slider } from "@/components/ui/slider"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
-import { mockGenres, translations } from "@/lib/duLieuGiaLap"
-import { useTheme } from "@/lib/nguCanhGiaoDien"
-import { useToast } from "@/hooks/dungThongBao"
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  BadgeCheck,
+  Crown,
+  LogIn,
+  LogOut,
+  Mail,
+  RefreshCcw,
+  Shield,
+  User,
+  UserCircle2,
+} from "lucide-react";
 
-export default function SettingsPage() {
-  const { language, setLanguage } = useTheme()
-  const { toast } = useToast()
-  const t = translations[language]
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useAuth } from "@/lib/nguCanhXacThuc";
+import { cn } from "@/lib/tienIch";
 
-  const [profile, setProfile] = useState({
-    name: "KhoaLisa",
-    email: "khoalisa@moodsync.ai",
-    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop",
-  })
+function getProviderLabel(provider?: string | null) {
+  if (!provider) return "Không xác định";
 
-  const [preferences, setPreferences] = useState({
-    theme: "dark",
-    autoPlay: true,
-    crossfade: true,
-    crossfadeDuration: 5,
-    normalizeVolume: true,
-    showLyrics: true,
-    highQualityStreaming: true,
-    downloadQuality: "high",
-  })
+  if (provider === "local") return "Email / Mật khẩu";
+  if (provider === "google") return "Google";
 
-  const [privacy, setPrivacy] = useState({
-    cameraAccess: true,
-    microphoneAccess: true,
-    emotionHistory: true,
-    shareListening: false,
-    personalizedAds: false,
-  })
+  return provider;
+}
 
-  const [notifications, setNotifications] = useState({
-    newRecommendations: true,
-    weeklyInsights: true,
-    moodReminders: true,
-    newFeatures: true,
-    email: false,
-    push: true,
-  })
+function getUserInitial(name?: string | null, email?: string | null) {
+  const source = name?.trim() || email?.trim() || "U";
 
-  const [selectedGenres, setSelectedGenres] = useState<string[]>(["kpop", "pop", "rnb", "indie"])
+  return source.charAt(0).toUpperCase();
+}
 
-  const handleSave = () => {
-    toast({
-      title: language === "vi" ? "Đã lưu cài đặt" : "Settings saved",
-      description: language === "vi" 
-        ? "Tất cả thay đổi đã được áp dụng"
-        : "All changes have been applied",
-    })
+export default function UserProfilePage() {
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const isAdmin = useMemo(() => {
+    return user?.email === "admin@gmail.com" || user?.role === "admin";
+  }, [user?.email, user?.role]);
+
+  const isVipPro = Boolean(user?.is_vip);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
+      router.replace("/dangNhap");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  async function handleRefreshUser() {
+    setMessage(null);
+    setIsRefreshing(true);
+
+    try {
+      await refreshUser();
+      setMessage("Đã cập nhật thông tin tài khoản mới nhất.");
+    } catch (error) {
+      console.warn("Không thể cập nhật thông tin user:", error);
+      setMessage("Không thể cập nhật thông tin tài khoản. Vui lòng thử lại.");
+    } finally {
+      setIsRefreshing(false);
+    }
   }
 
-  const connectedServices = [
-    { 
-      name: "MoodSync Cloud", 
-      icon: Brain,
-      connected: true,
-      status: language === "vi" ? "Đã kết nối" : "Connected"
-    },
-    { 
-      name: "Library Sync", 
-      icon: FolderSync,
-      connected: false,
-      status: language === "vi" ? "Chưa kết nối" : "Not connected"
-    },
-    { 
-      name: "Assistant Memory", 
-      icon: Database,
-      connected: true,
-      status: language === "vi" ? "Đã kết nối" : "Connected"
-    },
-  ]
+  async function handleLogout() {
+    setIsLoggingOut(true);
+
+    try {
+      await logout();
+      router.replace("/dangNhap");
+    } catch (error) {
+      console.warn("Không thể đăng xuất:", error);
+      setIsLoggingOut(false);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <main className="mx-auto max-w-5xl px-6 py-16 text-white">
+        <Card className="border-white/10 bg-white/[0.04]">
+          <CardContent className="p-6 text-white/70">
+            Đang tải hồ sơ người dùng...
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return null;
+  }
 
   return (
-    <div className="pb-32">
-      <div className="mx-auto max-w-5xl space-y-8">
-        {/* Header */}
-        <div className="surface-elevated flex flex-col gap-4 p-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-[0.68rem] uppercase tracking-[0.28em] text-white/35">Settings</p>
-            <h1 className="mt-4 text-3xl font-bold text-white">{t.settings}</h1>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-white/62">
-              {language === "vi" 
-                ? "Quản lý tài khoản và tùy chỉnh trải nghiệm"
-                : "Manage your account and customize your experience"}
-            </p>
+    <main className="mx-auto max-w-6xl px-6 py-10 text-white">
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 shadow-2xl shadow-black/30 md:p-8">
+        <div className="absolute right-[-6rem] top-[-6rem] h-64 w-64 rounded-full bg-amber-400/20 blur-3xl" />
+        <div className="absolute bottom-[-7rem] left-[-5rem] h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
+
+        <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="relative h-28 w-28 overflow-hidden rounded-3xl border border-white/15 bg-white/10 shadow-xl">
+              {user.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.name || user.email}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-white/10 text-4xl font-black text-white">
+                  {getUserInitial(user.name, user.email)}
+                </div>
+              )}
+
+              {isVipPro ? (
+                <div className="absolute bottom-2 right-2 rounded-full bg-amber-400 p-1.5 text-slate-950 shadow-lg">
+                  <Crown className="h-4 w-4" />
+                </div>
+              ) : null}
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-300">
+                Hồ sơ người dùng
+              </p>
+
+              <h1 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">
+                {user.name || "Người dùng MoodSync"}
+              </h1>
+
+              <p className="mt-2 flex items-center gap-2 text-sm text-white/60">
+                <Mail className="h-4 w-4" />
+                {user.email}
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Badge
+                  className={cn(
+                    "border px-3 py-1",
+                    isVipPro
+                      ? "border-amber-300/30 bg-amber-300/15 text-amber-100"
+                      : "border-white/10 bg-white/10 text-white/70",
+                  )}
+                >
+                  <Crown className="mr-1.5 h-3.5 w-3.5" />
+                  {isVipPro ? "VIP PRO đã kích hoạt" : "Chưa có VIP PRO"}
+                </Badge>
+
+                <Badge
+                  className={cn(
+                    "border px-3 py-1",
+                    isAdmin
+                      ? "border-emerald-300/30 bg-emerald-300/15 text-emerald-100"
+                      : "border-white/10 bg-white/10 text-white/70",
+                  )}
+                >
+                  <Shield className="mr-1.5 h-3.5 w-3.5" />
+                  {isAdmin ? "Admin" : "User"}
+                </Badge>
+              </div>
+            </div>
           </div>
-          <Button onClick={handleSave} className="gap-2 rounded-full bg-[var(--brand-accent)] text-[#06120a] hover:bg-[var(--brand-accent)]/90">
-            <Save className="w-4 h-4" />
-            {language === "vi" ? "Lưu thay đổi" : "Save Changes"}
-          </Button>
+
+          <div className="flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
+            <Button
+              type="button"
+              onClick={handleRefreshUser}
+              disabled={isRefreshing}
+              className="rounded-full bg-white text-slate-950 hover:bg-white/90"
+            >
+              <RefreshCcw
+                className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")}
+              />
+              {isRefreshing ? "Đang cập nhật..." : "Cập nhật hồ sơ"}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="rounded-full border-red-300/30 bg-red-400/10 text-red-100 hover:bg-red-400/20"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
+            </Button>
+          </div>
         </div>
+      </section>
 
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="bg-card/50 border border-white/10 p-1 flex-wrap h-auto gap-1">
-            <TabsTrigger value="profile" className="data-[state=active]:bg-primary/20 gap-2">
-              <User className="w-4 h-4" />
-              {language === "vi" ? "Hồ sơ" : "Profile"}
-            </TabsTrigger>
-            <TabsTrigger value="appearance" className="data-[state=active]:bg-primary/20 gap-2">
-              <Palette className="w-4 h-4" />
-              {language === "vi" ? "Giao diện" : "Appearance"}
-            </TabsTrigger>
-            <TabsTrigger value="music" className="data-[state=active]:bg-primary/20 gap-2">
-              <Music className="w-4 h-4" />
-              {language === "vi" ? "Âm nhạc" : "Music"}
-            </TabsTrigger>
-            <TabsTrigger value="privacy" className="data-[state=active]:bg-primary/20 gap-2">
-              <Shield className="w-4 h-4" />
-              {language === "vi" ? "Quyền riêng tư" : "Privacy"}
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="data-[state=active]:bg-primary/20 gap-2">
-              <Bell className="w-4 h-4" />
-              {language === "vi" ? "Thông báo" : "Notifications"}
-            </TabsTrigger>
-            <TabsTrigger value="connections" className="data-[state=active]:bg-primary/20 gap-2">
-              <Link2 className="w-4 h-4" />
-              {language === "vi" ? "Kết nối" : "Connections"}
-            </TabsTrigger>
-          </TabsList>
+      {message ? (
+        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white/70">
+          {message}
+        </div>
+      ) : null}
 
-          {/* Profile Tab */}
-          <TabsContent value="profile" className="mt-6 space-y-6">
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-white/10 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle>{language === "vi" ? "Thông tin cá nhân" : "Personal Information"}</CardTitle>
-                <CardDescription>
-                  {language === "vi" 
-                    ? "Cập nhật thông tin tài khoản của bạn"
-                    : "Update your account information"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Avatar */}
-                <div className="flex items-center gap-6">
-                  <div className="relative">
-                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary/50">
-                      <Image
-                        src={profile.avatar}
-                        alt="Avatar"
-                        width={96}
-                        height={96}
-                        className="object-cover"
-                      />
-                    </div>
-                    <Button 
-                      size="icon" 
-                      variant="secondary"
-                      className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full"
-                    >
-                      <Camera className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">{profile.name}</h3>
-                    <p className="text-sm text-muted-foreground">{profile.email}</p>
-                    <Badge className="mt-2 bg-gradient-to-r from-rose-500 to-pink-500">
-                      VIP Pro
-                    </Badge>
-                  </div>
-                </div>
+      <section className="mt-8 grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
+        <Card className="border-white/10 bg-white/[0.04] text-white">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCircle2 className="h-5 w-5 text-amber-300" />
+              Thông tin tài khoản
+            </CardTitle>
 
-                <Separator className="bg-white/10" />
+            <CardDescription className="text-white/50">
+              Các thông tin được lấy từ tài khoản đang đăng nhập.
+            </CardDescription>
+          </CardHeader>
 
-                {/* Form Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{language === "vi" ? "Tên hiển thị" : "Display Name"}</Label>
-                    <Input 
-                      value={profile.name}
-                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                      className="bg-white/5 border-white/10"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input 
-                      value={profile.email}
-                      onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                      className="bg-white/5 border-white/10"
-                    />
-                  </div>
-                </div>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">
+                ID người dùng
+              </p>
+              <p className="mt-2 text-lg font-semibold text-white">
+                #{user.id}
+              </p>
+            </div>
 
-                <div className="space-y-2">
-                  <Label>{language === "vi" ? "Ngôn ngữ giao diện" : "Interface Language"}</Label>
-                  <Select value={language} onValueChange={(v) => setLanguage(v as "vi" | "en")}>
-                    <SelectTrigger className="w-full md:w-64 bg-white/5 border-white/10">
-                      <Globe className="w-4 h-4 mr-2" />
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="vi">Tiếng Việt</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">
+                Tên hiển thị
+              </p>
+              <p className="mt-2 text-lg font-semibold text-white">
+                {user.name || "Chưa cập nhật"}
+              </p>
+            </div>
 
-          {/* Appearance Tab */}
-          <TabsContent value="appearance" className="mt-6 space-y-6">
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-white/10 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle>{language === "vi" ? "Giao diện" : "Appearance"}</CardTitle>
-                <CardDescription>
-                  {language === "vi" 
-                    ? "Tùy chỉnh giao diện ứng dụng"
-                    : "Customize how the app looks"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <Label>{language === "vi" ? "Chế độ màu" : "Color Mode"}</Label>
-                  <div className="grid grid-cols-3 gap-4">
-                    {[
-                      { id: "light", icon: Sun, label: language === "vi" ? "Sáng" : "Light" },
-                      { id: "dark", icon: Moon, label: language === "vi" ? "Tối" : "Dark" },
-                      { id: "system", icon: Monitor, label: language === "vi" ? "Hệ thống" : "System" },
-                    ].map((mode) => (
-                      <button
-                        key={mode.id}
-                        onClick={() => setPreferences({ ...preferences, theme: mode.id })}
-                        className={`p-4 rounded-2xl border transition-all ${
-                          preferences.theme === mode.id
-                            ? "bg-primary/20 border-primary"
-                            : "bg-white/5 border-white/10 hover:border-white/20"
-                        }`}
-                      >
-                        <mode.icon className="w-6 h-6 mx-auto mb-2 text-foreground" />
-                        <span className="text-sm text-foreground">{mode.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">
+                Email
+              </p>
+              <p className="mt-2 break-all text-lg font-semibold text-white">
+                {user.email}
+              </p>
+            </div>
 
-                <Separator className="bg-white/10" />
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">
+                Phương thức đăng nhập
+              </p>
+              <p className="mt-2 text-lg font-semibold text-white">
+                {getProviderLabel(user.auth_provider)}
+              </p>
+            </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>{language === "vi" ? "Hiện lời bài hát" : "Show Lyrics"}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {language === "vi" 
-                        ? "Hiển thị lời bài hát khi phát nhạc"
-                        : "Display lyrics while playing music"}
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">
+                Vai trò
+              </p>
+              <p className="mt-2 flex items-center gap-2 text-lg font-semibold text-white">
+                <Shield className="h-5 w-5 text-emerald-300" />
+                {isAdmin ? "Quản trị viên" : "Người dùng"}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">
+                Trạng thái VIP PRO
+              </p>
+              <p className="mt-2 flex items-center gap-2 text-lg font-semibold text-white">
+                <Crown
+                  className={cn(
+                    "h-5 w-5",
+                    isVipPro ? "text-amber-300" : "text-white/40",
+                  )}
+                />
+                {isVipPro ? "Đã kích hoạt" : "Chưa kích hoạt"}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-5">
+          <Card className="border-white/10 bg-white/[0.04] text-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-amber-300" />
+                Gói VIP PRO
+              </CardTitle>
+
+              <CardDescription className="text-white/50">
+                Trạng thái quyền tải nhạc độc quyền.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              {isVipPro ? (
+                <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4">
+                  <div className="flex items-center gap-2 text-emerald-100">
+                    <BadgeCheck className="h-5 w-5" />
+                    <p className="font-semibold">
+                      Tài khoản đã được duyệt VIP PRO
                     </p>
                   </div>
-                  <Switch 
-                    checked={preferences.showLyrics}
-                    onCheckedChange={(checked) => setPreferences({ ...preferences, showLyrics: checked })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          {/* Music Tab */}
-          <TabsContent value="music" className="mt-6 space-y-6">
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-white/10 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle>{language === "vi" ? "Tùy chọn phát nhạc" : "Playback Preferences"}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>{language === "vi" ? "Tự động phát" : "Autoplay"}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {language === "vi" 
-                        ? "Tự động phát bài tiếp theo"
-                        : "Automatically play next song"}
-                    </p>
+                  <p className="mt-3 text-sm leading-6 text-emerald-100/75">
+                    Bạn có thể tải các bài nhạc độc quyền từ chúng tôi.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
+                  <div className="flex items-center gap-2 text-amber-100">
+                    <Crown className="h-5 w-5" />
+                    <p className="font-semibold">Chưa đăng ký VIP PRO</p>
                   </div>
-                  <Switch 
-                    checked={preferences.autoPlay}
-                    onCheckedChange={(checked) => setPreferences({ ...preferences, autoPlay: checked })}
-                  />
+
+                  <p className="mt-3 text-sm leading-6 text-amber-100/75">
+                    Hãy nâng cấp VIP PRO để có thể tải nhạc độc quyền từ chúng
+                    tôi.
+                  </p>
                 </div>
+              )}
+            </CardContent>
+          </Card>
 
-                <Separator className="bg-white/10" />
+          <Card className="border-white/10 bg-white/[0.04] text-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5 text-primary" />
+                Truy cập nhanh
+              </CardTitle>
+            </CardHeader>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>{language === "vi" ? "Chuyển bài mượt" : "Crossfade"}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {language === "vi" 
-                        ? "Chuyển đổi mượt mà giữa các bài"
-                        : "Smooth transition between songs"}
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={preferences.crossfade}
-                    onCheckedChange={(checked) => setPreferences({ ...preferences, crossfade: checked })}
-                  />
-                </div>
+            <CardContent className="space-y-3">
+              {!isVipPro ? (
+                <Link
+                  href="/"
+                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/75 transition hover:bg-white/[0.08]"
+                >
+                  <span>Mở VIP PRO ở thanh topbar để nâng cấp</span>
+                  <Crown className="h-4 w-4 text-amber-300" />
+                </Link>
+              ) : null}
 
-                {preferences.crossfade && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label>{language === "vi" ? "Thời gian crossfade" : "Crossfade Duration"}</Label>
-                      <span className="text-sm text-muted-foreground">{preferences.crossfadeDuration}s</span>
-                    </div>
-                    <Slider
-                      value={[preferences.crossfadeDuration]}
-                      onValueChange={([value]) => setPreferences({ ...preferences, crossfadeDuration: value })}
-                      max={12}
-                      min={1}
-                      step={1}
-                      className="w-full"
-                    />
-                  </div>
-                )}
-
-                <Separator className="bg-white/10" />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>{language === "vi" ? "Chuẩn hóa âm lượng" : "Normalize Volume"}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {language === "vi" 
-                        ? "Giữ âm lượng đồng đều giữa các bài"
-                        : "Keep volume consistent across songs"}
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={preferences.normalizeVolume}
-                    onCheckedChange={(checked) => setPreferences({ ...preferences, normalizeVolume: checked })}
-                  />
-                </div>
-
-                <Separator className="bg-white/10" />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>{language === "vi" ? "Phát chất lượng cao" : "High Quality Streaming"}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {language === "vi" 
-                        ? "Phát nhạc ở chất lượng cao nhất"
-                        : "Stream music at highest quality"}
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={preferences.highQualityStreaming}
-                    onCheckedChange={(checked) => setPreferences({ ...preferences, highQualityStreaming: checked })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-white/10 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle>{language === "vi" ? "Thể loại yêu thích" : "Preferred Genres"}</CardTitle>
-                <CardDescription>
-                  {language === "vi" 
-                    ? "Chọn thể loại để cải thiện đề xuất"
-                    : "Select genres to improve recommendations"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-3">
-                  {mockGenres.map((genre) => {
-                    const isSelected = selectedGenres.includes(genre.id)
-                    return (
-                      <button
-                        key={genre.id}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedGenres(selectedGenres.filter((g) => g !== genre.id))
-                          } else {
-                            setSelectedGenres([...selectedGenres, genre.id])
-                          }
-                        }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
-                          isSelected
-                            ? "bg-primary/20 border-primary"
-                            : "bg-white/5 border-white/10 hover:border-white/20"
-                        }`}
-                      >
-                        <span>{genre.icon}</span>
-                        <span className="text-sm font-medium text-foreground">{genre.name}</span>
-                        {isSelected && <Check className="w-4 h-4 text-primary" />}
-                      </button>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Privacy Tab */}
-          <TabsContent value="privacy" className="mt-6 space-y-6">
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-white/10 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle>{language === "vi" ? "Quyền truy cập" : "Access Permissions"}</CardTitle>
-                <CardDescription>
-                  {language === "vi" 
-                    ? "Quản lý quyền truy cập cho phân tích cảm xúc"
-                    : "Manage permissions for emotion analysis"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                      <Camera className="w-5 h-5 text-blue-500" />
-                    </div>
-                    <div>
-                      <Label>{language === "vi" ? "Truy cập camera" : "Camera Access"}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {language === "vi" 
-                          ? "Cho phân tích khuôn mặt"
-                          : "For facial analysis"}
-                      </p>
-                    </div>
-                  </div>
-                  <Switch 
-                    checked={privacy.cameraAccess}
-                    onCheckedChange={(checked) => setPrivacy({ ...privacy, cameraAccess: checked })}
-                  />
-                </div>
-
-                <Separator className="bg-white/10" />
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center">
-                      <Mic className="w-5 h-5 text-rose-500" />
-                    </div>
-                    <div>
-                      <Label>{language === "vi" ? "Truy cập microphone" : "Microphone Access"}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {language === "vi" 
-                          ? "Cho phân tích giọng nói"
-                          : "For voice analysis"}
-                      </p>
-                    </div>
-                  </div>
-                  <Switch 
-                    checked={privacy.microphoneAccess}
-                    onCheckedChange={(checked) => setPrivacy({ ...privacy, microphoneAccess: checked })}
-                  />
-                </div>
-
-                <Separator className="bg-white/10" />
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-violet-500" />
-                    </div>
-                    <div>
-                      <Label>{language === "vi" ? "Lưu lịch sử cảm xúc" : "Emotion History"}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {language === "vi" 
-                          ? "Lưu lại phân tích cảm xúc"
-                          : "Save emotion analysis history"}
-                      </p>
-                    </div>
-                  </div>
-                  <Switch 
-                    checked={privacy.emotionHistory}
-                    onCheckedChange={(checked) => setPrivacy({ ...privacy, emotionHistory: checked })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-white/10 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle>{language === "vi" ? "Chia sẻ dữ liệu" : "Data Sharing"}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>{language === "vi" ? "Chia sẻ hoạt động nghe" : "Share Listening Activity"}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {language === "vi" 
-                        ? "Cho bạn bè thấy bạn đang nghe gì"
-                        : "Let friends see what you're listening to"}
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={privacy.shareListening}
-                    onCheckedChange={(checked) => setPrivacy({ ...privacy, shareListening: checked })}
-                  />
-                </div>
-
-                <Separator className="bg-white/10" />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>{language === "vi" ? "Quảng cáo cá nhân hóa" : "Personalized Ads"}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {language === "vi" 
-                        ? "Nhận quảng cáo dựa trên sở thích"
-                        : "Receive ads based on your preferences"}
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={privacy.personalizedAds}
-                    onCheckedChange={(checked) => setPrivacy({ ...privacy, personalizedAds: checked })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Notifications Tab */}
-          <TabsContent value="notifications" className="mt-6 space-y-6">
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-white/10 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle>{language === "vi" ? "Thông báo" : "Notifications"}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>{language === "vi" ? "Đề xuất mới" : "New Recommendations"}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {language === "vi" 
-                        ? "Thông báo khi có đề xuất mới"
-                        : "Notify when new recommendations available"}
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={notifications.newRecommendations}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, newRecommendations: checked })}
-                  />
-                </div>
-
-                <Separator className="bg-white/10" />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>{language === "vi" ? "Báo cáo tuần" : "Weekly Insights"}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {language === "vi" 
-                        ? "Nhận báo cáo cảm xúc hàng tuần"
-                        : "Receive weekly emotion reports"}
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={notifications.weeklyInsights}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, weeklyInsights: checked })}
-                  />
-                </div>
-
-                <Separator className="bg-white/10" />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>{language === "vi" ? "Nhắc nhở tâm trạng" : "Mood Reminders"}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {language === "vi" 
-                        ? "Nhắc nhở quét cảm xúc định kỳ"
-                        : "Remind to scan emotions periodically"}
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={notifications.moodReminders}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, moodReminders: checked })}
-                  />
-                </div>
-
-                <Separator className="bg-white/10" />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>{language === "vi" ? "Tính năng mới" : "New Features"}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {language === "vi" 
-                        ? "Thông báo về cập nhật và tính năng mới"
-                        : "Notify about updates and new features"}
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={notifications.newFeatures}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, newFeatures: checked })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-white/10 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle>{language === "vi" ? "Kênh thông báo" : "Notification Channels"}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Email</Label>
-                  </div>
-                  <Switch 
-                    checked={notifications.email}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, email: checked })}
-                  />
-                </div>
-
-                <Separator className="bg-white/10" />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Push Notifications</Label>
-                  </div>
-                  <Switch 
-                    checked={notifications.push}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, push: checked })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Connections Tab */}
-          <TabsContent value="connections" className="mt-6 space-y-6">
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-white/10 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle>{language === "vi" ? "Dịch vụ đã kết nối" : "Connected Services"}</CardTitle>
-                <CardDescription>
-                  {language === "vi" 
-                    ? "Quản lý kết nối với các dịch vụ âm nhạc"
-                    : "Manage connections to music services"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {connectedServices.map((service) => (
-                  <div 
-                    key={service.name}
-                    className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10"
+              {isAdmin ? (
+                <>
+                  <Link
+                    href="/quanLyDonHang"
+                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/75 transition hover:bg-white/[0.08]"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center">
-                        <service.icon className="w-6 h-6 text-white/80" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{service.name}</p>
-                        <p className={`text-sm ${service.connected ? "text-emerald-500" : "text-muted-foreground"}`}>
-                          {service.status}
-                        </p>
-                      </div>
-                    </div>
-                    <Button 
-                      variant={service.connected ? "outline" : "default"}
-                      size="sm"
-                    >
-                      {service.connected 
-                        ? (language === "vi" ? "Ngắt kết nối" : "Disconnect")
-                        : (language === "vi" ? "Kết nối" : "Connect")}
-                    </Button>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+                    <span>Quản lý đơn hàng VIP PRO</span>
+                    <Shield className="h-4 w-4 text-emerald-300" />
+                  </Link>
 
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-white/10 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle>{language === "vi" ? "Thiết bị" : "Devices"}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                      <Monitor className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">MacBook Pro</p>
-                      <p className="text-sm text-emerald-500">
-                        {language === "vi" ? "Thiết bị hiện tại" : "Current device"}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="border-emerald-500/50 text-emerald-500">
-                    {language === "vi" ? "Đang hoạt động" : "Active"}
-                  </Badge>
-                </div>
+                  <Link
+                    href="/quanLyBaiHat"
+                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/75 transition hover:bg-white/[0.08]"
+                  >
+                    <span>Quản lý bài hát</span>
+                    <Shield className="h-4 w-4 text-emerald-300" />
+                  </Link>
+                </>
+              ) : null}
 
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
-                      <Smartphone className="w-6 h-6 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">iPhone 15 Pro</p>
-                      <p className="text-sm text-muted-foreground">
-                        {language === "vi" ? "Hoạt động 2 giờ trước" : "Active 2 hours ago"}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    {language === "vi" ? "Xóa" : "Remove"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
-  )
+              {!isAuthenticated ? (
+                <Link
+                  href="/dangNhap"
+                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/75 transition hover:bg-white/[0.08]"
+                >
+                  <span>Đăng nhập</span>
+                  <LogIn className="h-4 w-4" />
+                </Link>
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    </main>
+  );
 }

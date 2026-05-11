@@ -6,7 +6,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
-  Bell,
   Brain,
   Crown,
   FilterX,
@@ -26,8 +25,8 @@ import { VipProPayment } from "@/components/vip-pro-payment";
 import { LogoutButton } from "@/components/auth/nutDangXuat";
 import { cn } from "@/lib/tienIch";
 import { useTheme } from "@/lib/nguCanhGiaoDien";
+import { useAuth } from "@/lib/nguCanhXacThuc";
 import { appShellCopy } from "@/lib/vietnamese-home-copy";
-import { LanguageSwitcher } from "./chuyenNgonNgu";
 import { MoodBadge } from "./huyHieuCamXuc";
 
 const mobileNavItems = [
@@ -57,6 +56,12 @@ interface AppHeaderProps {
   className?: string;
 }
 
+function getUserInitial(name?: string | null, email?: string | null) {
+  const source = name?.trim() || email?.trim() || "U";
+
+  return source.charAt(0).toUpperCase();
+}
+
 export function AppHeader({ className }: AppHeaderProps) {
   const {
     currentEmotion,
@@ -68,6 +73,8 @@ export function AppHeader({ className }: AppHeaderProps) {
     setLikedOnly,
     clearSongFilters,
   } = useTheme();
+
+  const { user } = useAuth();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -238,27 +245,26 @@ export function AppHeader({ className }: AppHeaderProps) {
               ) : null}
             </div>
 
-            <LanguageSwitcher
-              variant="compact"
-              className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-2"
-            />
-
-            <button
-              type="button"
-              className="search-pill relative rounded-full p-2.5 text-white/65 transition-colors hover:text-white"
-              aria-label="Thông báo"
+            <Link
+              href="/caiDat"
+              aria-label="Mở hồ sơ người dùng"
+              title="Hồ sơ người dùng"
+              className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/10 text-sm font-black text-white shadow-[0_10px_22px_rgba(0,0,0,0.2)] transition hover:scale-105 hover:border-amber-300/40 hover:bg-white/15"
             >
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--brand-accent)]" />
-            </button>
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.name || user.email || "Avatar người dùng"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span>{getUserInitial(user?.name, user?.email)}</span>
+              )}
 
-            <button
-              type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/8 bg-[linear-gradient(135deg,rgba(30,215,96,0.9),rgba(116,244,160,0.62))] text-sm font-semibold text-[#06120a] shadow-[0_10px_22px_rgba(30,215,96,0.16)]"
-              aria-label="Tài khoản"
-            >
-              M
-            </button>
+              {user?.is_vip ? (
+                <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-slate-950 bg-amber-400" />
+              ) : null}
+            </Link>
 
             <LogoutButton className="hidden xl:inline-flex" />
           </div>
