@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ChevronDown,
   ChevronUp,
+  Download,
   Heart,
   ListMusic,
   Maximize2,
@@ -87,6 +88,61 @@ export function BottomPlayer() {
       console.warn("Không lưu được trạng thái like:", error);
     } finally {
       setIsLikeSaving(false);
+    }
+  }
+
+  function buildDownloadFileName() {
+    const rawName = `${songDangPhat?.title || "bai-hat"}-${
+      songDangPhat?.artist || "unknown"
+    }`;
+
+    const safeName = rawName
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .replace(/[^a-zA-Z0-9-_ ]/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .toLowerCase();
+
+    return `${safeName || "bai-hat"}.mp3`;
+  }
+
+  async function handleDownloadSong() {
+    if (!songDangPhat?.audioUrl) return;
+
+    const fileName = buildDownloadFileName();
+
+    try {
+      const response = await fetch(songDangPhat.audioUrl);
+
+      if (!response.ok) {
+        throw new Error("Không tải được file audio.");
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.warn("Không tải được bằng blob, mở link audio trực tiếp:", error);
+
+      const link = document.createElement("a");
+      link.href = songDangPhat.audioUrl;
+      link.download = fileName;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     }
   }
 
@@ -278,6 +334,16 @@ export function BottomPlayer() {
 
             {/* Right: Extra Controls */}
             <div className="flex flex-1 items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleDownloadSong}
+                title="Tải bài hát về máy"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+
               <Button variant="ghost" size="icon">
                 <Mic2 className="h-4 w-4" />
               </Button>
