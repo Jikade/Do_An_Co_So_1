@@ -1,5 +1,6 @@
 "use client";
 
+import { recordListeningHistory } from "@/lib/api/history";
 import {
   createContext,
   useCallback,
@@ -62,6 +63,7 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastRecordedHistoryRef = useRef<string | null>(null);
 
   const [currentTheme, setCurrentTheme] = useState<SongTheme>("pink");
   const [currentEmotion, setCurrentEmotion] = useState<Emotion>("happy");
@@ -95,6 +97,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   const setNowPlaying = useCallback((song: Song | null) => {
+    lastRecordedHistoryRef.current = null;
     setNowPlayingState(song);
 
     setCurrentTime(0);
@@ -352,6 +355,37 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("ended", khiKetThuc);
     };
   }, [nowPlaying?.id, nowPlaying?.duration, playNext]);
+
+  useEffect(() => {
+    if (!isPlaying || !nowPlaying) return;
+
+    // Chỉ lưu lịch sử khi user đã nghe tối thiểu 5 giây.
+    // Tránh trường hợp user bấm nhầm rồi chuyển bài ngay.
+    if (currentTime < 5) return;
+
+    // Tránh lưu trùng cùng một bài trong cùng một lượt nghe.
+    if (lastRecordedHistoryRef.current === nowPlaying.id) return;
+
+    const trackId = Number(nowPlaying.id);
+
+    // Chỉ lưu được bài hát lấy từ backend vì id phải là số.
+    // Các bài mock nếu có id dạng string như "mock-1" sẽ bị bỏ qua.
+    if (!Number.isInteger(trackId)) return;
+
+    lastRecordedHistoryRef.current = nowPlaying.id;
+
+    recordListeningHistory({
+      track_id: trackId,
+      listen_ms: Math.round(currentTime * 1000),
+      emotion_state_at_time: {
+        emotion: currentEmotion,
+        source: "player",
+      },
+    }).catch((error) => {
+      lastRecordedHistoryRef.current = null;
+      console.warn("Không lưu được lịch sử nghe:", error);
+    });
+  }, [isPlaying, nowPlaying, currentTime, currentEmotion]);
 
   const giaTri = useMemo<ThemeContextType>(
     () => ({

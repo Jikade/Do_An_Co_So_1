@@ -17,6 +17,7 @@ from app.routers import (
     recommend,
     tracks,
     users,
+    history,
 )
 
 Base.metadata.create_all(bind=engine)
@@ -50,6 +51,7 @@ app.include_router(users.router, prefix="/users", tags=["users"])
 
 # Music APIs
 app.include_router(tracks.router, prefix="/tracks", tags=["tracks"])
+app.include_router(history.router, prefix="/history", tags=["history"])
 app.include_router(playlists.router, prefix="/playlists", tags=["playlists"])
 
 # Emotion APIs

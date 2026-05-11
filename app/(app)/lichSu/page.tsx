@@ -1,362 +1,421 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { Clock3, History, Loader2, Play, Search, Trash2 } from "lucide-react";
+
 import {
-  History,
-  Clock,
-  Calendar,
-  Filter,
-  Play,
-  Heart,
-  MoreHorizontal,
-  Search,
-  Music2,
-  Smile,
-  ArrowUpRight,
-  ListMusic,
-  Disc3,
-  Waves,
-  Sparkles,
-  LayoutGrid,
-} from "lucide-react";
+  clearListeningHistory,
+  getListeningHistory,
+  type HistoryTrack,
+  type ListeningHistoryItem,
+} from "@/lib/api/history";
+import { toImageUrl, toMediaUrl } from "@/lib/api-client";
 import {
-  mockSongs,
-  mockHistoryRecords,
-  mockEmotions,
+  formatDuration,
+  themePalette,
+  type Emotion,
   type Language,
+  type Song,
+  type SongTheme,
 } from "@/lib/duLieuGiaLap";
 import { useTheme } from "@/lib/nguCanhGiaoDien";
-import { MoodBadge } from "@/components/huyHieuCamXuc";
 import { cn } from "@/lib/tienIch";
 
-// Helper to group by "human relative time"
-const groupRecords = (
-  records: typeof mockHistoryRecords,
-  language: Language,
-) => {
-  const groups: Record<string, typeof mockHistoryRecords> = {
-    [language === "vi" ? "Hôm nay" : "Today"]: [],
-    [language === "vi" ? "Tuần này" : "This Week"]: [],
-    [language === "vi" ? "Cũ hơn" : "Older"]: [],
-  };
-
-  records.forEach((record, i) => {
-    // In a real app we'd uses dayjs/date-fns, here we mock logic by index
-    if (i < 3) groups[language === "vi" ? "Hôm nay" : "Today"].push(record);
-    else if (i < 8)
-      groups[language === "vi" ? "Tuần này" : "This Week"].push(record);
-    else groups[language === "vi" ? "Cũ hơn" : "Older"].push(record);
-  });
-
-  return Object.entries(groups).filter(([_, items]) => items.length > 0);
+const emotionToTheme: Record<Emotion, SongTheme> = {
+  happy: "pink",
+  sad: "blue",
+  calm: "violet",
+  angry: "red",
+  romantic: "pink",
+  nostalgic: "sepia",
+  energetic: "red",
+  stressed: "cyan",
 };
+
+const emotionLabelsVi: Record<Emotion, string> = {
+  happy: "Vui vẻ",
+  sad: "Buồn",
+  calm: "Bình yên",
+  angry: "Tức giận",
+  romantic: "Lãng mạn",
+  nostalgic: "Hoài niệm",
+  energetic: "Năng lượng",
+  stressed: "Căng thẳng",
+};
+
+const validEmotions = new Set<Emotion>([
+  "happy",
+  "sad",
+  "calm",
+  "angry",
+  "romantic",
+  "nostalgic",
+  "energetic",
+  "stressed",
+]);
+
+function normalizeEmotion(value?: string | null): Emotion {
+  if (value && validEmotions.has(value as Emotion)) {
+    return value as Emotion;
+  }
+
+  return "calm";
+}
+
+function getEmotionLabel(emotion: Emotion, language: Language) {
+  return language === "vi" ? emotionLabelsVi[emotion] : emotion;
+}
+
+function historyTrackToSong(track: HistoryTrack): Song {
+  const emotion = normalizeEmotion(track.mood || track.emotion);
+  const theme = emotionToTheme[emotion];
+
+  return {
+    id: String(track.id),
+    title: track.title,
+    artist: track.artist,
+    album: "MoodSync",
+    duration: Math.round(track.duration || 0),
+    theme,
+    coverUrl: toImageUrl(track.cover_image),
+    audioUrl: toMediaUrl(track.audio_url),
+    emotion,
+    mood: emotion,
+    palette: themePalette[theme],
+    lyrics: track.lyrics ?? null,
+    lyricsVi: [],
+    lyricsEn: [],
+    relatedSongIds: [],
+  };
+}
+
+function groupLabel(dateValue: string, language: Language) {
+  const date = new Date(dateValue);
+  const today = new Date();
+  const target = new Date(date);
+
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.floor(
+    (today.getTime() - target.getTime()) / 86_400_000,
+  );
+
+  if (diffDays === 0) return language === "vi" ? "Hôm nay" : "Today";
+  if (diffDays === 1) return language === "vi" ? "Hôm qua" : "Yesterday";
+  if (diffDays < 7) return language === "vi" ? "Tuần này" : "This week";
+
+  return new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : "en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatHistoryTime(dateValue: string, language: Language) {
+  return new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(dateValue));
+}
 
 export default function HistoryPage() {
   const { language, setNowPlaying, setIsPlaying } = useTheme();
 
-  const [activeTab, setActiveTab] = useState<"all" | "moods" | "sessions">(
-    "all",
-  );
+  const [records, setRecords] = useState<ListeningHistoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isClearing, setIsClearing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredHistory = useMemo(() => {
-    return mockHistoryRecords.filter((record) => {
-      const song = mockSongs.find((s) => s.id === record.songId);
-      if (!song) return false;
-      return (
-        song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        song.artist.toLowerCase().includes(searchQuery.toLowerCase())
+  async function loadHistory() {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const data = await getListeningHistory(100);
+      setRecords(data);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : language === "vi"
+            ? "Không tải được lịch sử nghe."
+            : "Could not load listening history.",
       );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadHistory();
+  }, []);
+
+  const filteredRecords = useMemo(() => {
+    const keyword = searchQuery.trim().toLowerCase();
+
+    if (!keyword) return records;
+
+    return records.filter((record) => {
+      const title = record.track.title.toLowerCase();
+      const artist = record.track.artist.toLowerCase();
+
+      return title.includes(keyword) || artist.includes(keyword);
     });
-  }, [searchQuery]);
+  }, [records, searchQuery]);
 
-  const groupedData = useMemo(
-    () => groupRecords(filteredHistory, language),
-    [filteredHistory, language],
-  );
+  const groupedRecords = useMemo(() => {
+    const groups = new Map<string, ListeningHistoryItem[]>();
 
-  // Framer Motion Variants
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 },
-    },
-  };
+    for (const record of filteredRecords) {
+      const label = groupLabel(record.created_at, language);
+      const current = groups.get(label) ?? [];
 
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, x: -10 },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: { type: "spring", stiffness: 260, damping: 20 },
-    },
-  };
+      current.push(record);
+      groups.set(label, current);
+    }
+
+    return Array.from(groups.entries());
+  }, [filteredRecords, language]);
+
+  const stats = useMemo(() => {
+    const uniqueTracks = new Set(records.map((record) => record.track_id));
+    const totalMinutes = Math.round(
+      records.reduce((sum, record) => sum + (record.listen_ms || 0), 0) /
+        60_000,
+    );
+
+    return {
+      playCount: records.length,
+      uniqueTrackCount: uniqueTracks.size,
+      totalMinutes,
+    };
+  }, [records]);
+
+  function handlePlay(record: ListeningHistoryItem) {
+    const song = historyTrackToSong(record.track);
+
+    setNowPlaying(song);
+    setIsPlaying(true);
+  }
+
+  async function handleClearHistory() {
+    const confirmed = window.confirm(
+      language === "vi"
+        ? "Bạn có chắc muốn xoá toàn bộ lịch sử nghe của tài khoản này?"
+        : "Are you sure you want to clear this account's listening history?",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsClearing(true);
+      setError(null);
+
+      await clearListeningHistory();
+      setRecords([]);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : language === "vi"
+            ? "Không xoá được lịch sử."
+            : "Could not clear history.",
+      );
+    } finally {
+      setIsClearing(false);
+    }
+  }
 
   return (
-    <div className="relative min-h-screen pb-40 text-white antialiased overflow-hidden">
-      {/* 1. CINEMATIC HEADER (Journal Style) */}
-      <motion.section
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-[#050608] min-h-[320px] flex items-center mb-12 shadow-2xl"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
-        <div className="absolute -bottom-[50%] -right-[10%] w-[80%] h-[150%] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)] blur-[80px] pointer-events-none" />
-
-        <div className="relative z-10 w-full p-8 md:p-14 grid gap-10 xl:grid-cols-[1fr_1.2fr] items-center">
+    <main className="min-h-screen px-4 py-6 text-white md:px-8">
+      <section className="mb-8 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-md">
-              <History className="h-3.5 w-3.5 text-[#a88beb]" />
-              <span className="text-[0.6rem] font-bold uppercase tracking-widest text-white/60">
-                Listening Archive
-              </span>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-xs font-bold uppercase tracking-[0.25em] text-white/50">
+              <History className="h-4 w-4" />
+              Listening Archive
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-white leading-tight">
-              {language === "vi" ? "Ký Ức" : "Your Music"}
-              <br />
-              <span className="text-white/40">
-                {language === "vi" ? "Gia Giai Điệu" : "Session Journal"}.
-              </span>
+            <h1 className="text-4xl font-black tracking-tight md:text-6xl">
+              {language === "vi" ? "Lịch sử nghe" : "Listening history"}
             </h1>
 
-            <p className="mt-6 max-w-xl text-[0.95rem] font-medium leading-relaxed text-white/40 italic">
-              "
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/55">
               {language === "vi"
-                ? "Âm nhạc không chỉ là những bài hát, mà là những khoảnh khắc chúng ta đã đi qua."
-                : "Music is not just songs, it is the moments we have lived through."}
-              "
+                ? "Mỗi tài khoản có một lịch sử riêng, được lưu trong database và tự cập nhật khi bạn nghe nhạc."
+                : "Each account has its own database-backed history, updated automatically as you listen."}
             </p>
           </div>
 
-          {/* Quick Stats Summary (Refined Cards) */}
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              {
-                label: language === "vi" ? "Số Bài Nghe" : "Songs Played",
-                val: "1,280",
-                icon: Music2,
-                color: "text-[#4facfe]",
-              },
-              {
-                label: language === "vi" ? "Tâm Trạng Chính" : "Main Mood",
-                val: "Vui vẻ",
-                icon: Smile,
-                color: "text-[var(--brand-accent)]",
-              },
-              {
-                label: language === "vi" ? "Giờ Nghe" : "Hours Sync",
-                val: "46.2h",
-                icon: Clock,
-                color: "text-[#a88beb]",
-              },
-              {
-                label: language === "vi" ? "Chu Kỳ AI" : "AI Accuracy",
-                val: "92%",
-                icon: Sparkles,
-                color: "text-[#ffb199]",
-              },
-            ].map((stat, i) => (
-              <div
-                key={i}
-                className="group p-6 rounded-[2rem] border border-white/10 bg-white/[0.02] backdrop-blur-xl hover:bg-white/5 transition-all"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <stat.icon
-                    className={cn(
-                      "h-5 w-5 opacity-40 group-hover:opacity-100 transition-opacity",
-                      stat.color,
-                    )}
-                  />
-                  <ArrowUpRight className="h-4 w-4 text-white/10 group-hover:text-white/40" />
-                </div>
-                <p className="text-2xl font-black text-white tracking-tight">
-                  {stat.val}
-                </p>
-                <p className="text-[0.65rem] font-bold uppercase tracking-widest text-white/30 mt-1">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={handleClearHistory}
+            disabled={records.length === 0 || isClearing}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-100 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isClearing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            {language === "vi" ? "Xoá lịch sử" : "Clear history"}
+          </button>
         </div>
-      </motion.section>
 
-      {/* 2. HISTORY NAVIGATION & SEARCH */}
-      <section className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 px-1">
-        <div className="flex p-1 rounded-2xl bg-white/[0.02] border border-white/[0.04] backdrop-blur-md">
-          {["all", "moods", "sessions"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={cn(
-                "px-6 py-2.5 rounded-xl text-[0.7rem] font-bold uppercase tracking-widest transition-all",
-                activeTab === tab
-                  ? "bg-white text-black shadow-lg"
-                  : "text-white/40 hover:text-white hover:bg-white/5",
-              )}
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {[
+            {
+              label: language === "vi" ? "Lượt nghe" : "Plays",
+              value: stats.playCount,
+            },
+            {
+              label: language === "vi" ? "Bài khác nhau" : "Unique tracks",
+              value: stats.uniqueTrackCount,
+            },
+            {
+              label: language === "vi" ? "Phút đã lưu" : "Saved minutes",
+              value: stats.totalMinutes,
+            },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-3xl border border-white/10 bg-black/20 p-5"
             >
-              {tab === "all"
-                ? language === "vi"
-                  ? "Tất cả"
-                  : "All"
-                : tab === "moods"
-                  ? language === "vi"
-                    ? "Tâm trạng"
-                    : "Moods"
-                  : language === "vi"
-                    ? "Phiên nghe"
-                    : "Sessions"}
-            </button>
+              <p className="text-3xl font-black">{stat.value}</p>
+              <p className="mt-1 text-xs font-bold uppercase tracking-widest text-white/35">
+                {stat.label}
+              </p>
+            </div>
           ))}
-        </div>
-
-        <div className="relative w-full md:w-[320px] group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 group-focus-within:text-[var(--brand-accent)] transition-colors" />
-          <input
-            type="text"
-            placeholder={
-              language === "vi" ? "Tìm trong ký ức..." : "Search memory..."
-            }
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-12 bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-4 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-all font-medium"
-          />
         </div>
       </section>
 
-      {/* 3. GROUPED LIST (THE PREMIUM JOURNAL) */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-16"
-      >
-        {groupedData.map(([groupTitle, items], groupIndex) => (
-          <section key={groupTitle} className="space-y-6">
-            {/* Elegant Separator Title */}
-            <div className="flex items-center gap-6 px-2">
-              <h3 className="text-[0.7rem] font-black uppercase tracking-[0.4em] text-white/20 whitespace-nowrap">
-                {groupTitle}
-              </h3>
-              <div className="h-[1px] w-full bg-gradient-to-r from-white/[0.08] to-transparent" />
-            </div>
+      <section className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="relative w-full md:max-w-md">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={
+              language === "vi"
+                ? "Tìm theo tên bài hát hoặc ca sĩ..."
+                : "Search by title or artist..."
+            }
+            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm outline-none transition placeholder:text-white/25 focus:border-white/30"
+          />
+        </div>
 
-            {/* Items List */}
-            <div className="flex flex-col gap-1.5 md:gap-2">
-              {items.map((record, i) => {
-                const song = mockSongs.find((s) => s.id === record.songId)!;
-                return (
-                  <motion.div
-                    key={record.id}
-                    variants={itemVariants}
-                    className="group relative flex items-center gap-6 p-4 rounded-[1.8rem] border border-transparent hover:border-white/5 hover:bg-white/[0.02] transition-all cursor-pointer overflow-hidden"
-                    onClick={() => {
-                      setNowPlaying(song);
-                      setIsPlaying(true);
-                    }}
-                  >
-                    {/* Time Pin */}
-                    <div className="hidden md:flex flex-col items-center justify-center w-16 shrink-0 opacity-20 group-hover:opacity-100 transition-opacity">
-                      <span className="text-[0.6rem] font-black tracking-widest">
-                        {record.timestamp.split(" ")[0]}
-                      </span>
-                      <div className="w-[1px] h-4 bg-white/20 my-1" />
-                    </div>
+        <button
+          type="button"
+          onClick={loadHistory}
+          className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-bold text-white/70 transition hover:bg-white/[0.08] hover:text-white"
+        >
+          {language === "vi" ? "Tải lại" : "Refresh"}
+        </button>
+      </section>
 
-                    {/* Large Refined Cover */}
-                    <div className="relative h-14 w-14 md:h-16 md:w-16 rounded-2xl overflow-hidden shadow-xl border border-white/10 group-hover:scale-105 transition-transform duration-500 shrink-0">
-                      <img
-                        src={song.coverUrl}
-                        className="w-full h-full object-cover"
-                        alt="Art"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Play className="h-5 w-5 text-white fill-current ml-1" />
-                      </div>
-                    </div>
+      {error && (
+        <div className="mb-6 rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm text-red-100">
+          {error}
+        </div>
+      )}
 
-                    {/* Metadata Hierarchy */}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-lg font-bold text-white group-hover:text-[var(--brand-accent)] transition-colors line-clamp-1">
-                        {song.title}
-                      </h4>
-                      <p className="text-[0.85rem] font-medium text-white/40 mt-0.5">
-                        {song.artist}
-                      </p>
-                    </div>
-
-                    {/* Mood Badge (Refined) */}
-                    <div className="hidden sm:flex shrink-0">
-                      <MoodBadge
-                        mood={record.emotion as any}
-                        size="sm"
-                        className="bg-white/5 border-white/5 text-white/60"
-                      />
-                    </div>
-
-                    {/* More Info */}
-                    <div className="flex items-center gap-4 px-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-2.5 rounded-full hover:bg-white/10 text-white/40 hover:text-rose-500 transition-all">
-                        <Heart className="h-4 w-4" />
-                      </button>
-                      <button className="p-2.5 rounded-full hover:bg-white/10 text-white/40 transition-all">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    {/* Interaction Glow Bottom Line */}
-                    <div className="absolute bottom-0 left-20 right-20 h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </motion.div>
-                );
-              })}
-            </div>
-          </section>
-        ))}
-
-        {/* Empty State */}
-        {filteredHistory.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-40 text-center space-y-4"
-          >
-            <div className="h-20 w-20 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center">
-              <LayoutGrid className="h-8 w-8 text-white/20" />
-            </div>
-            <p className="text-white/30 font-medium">
-              {language === "vi"
-                ? "Không tìm thấy ký ức nào phù hợp."
-                : "No memories found."}
-            </p>
-          </motion.div>
-        )}
-      </motion.div>
-
-      {/* 4. BOTTOM ARCHIVE CTA */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="mt-20 p-10 rounded-[3rem] border border-white/[0.04] bg-[#050608]/50 flex flex-col items-center text-center space-y-6"
-      >
-        <Disc3 className="h-10 w-10 text-white/10 animate-spin-slow" />
-        <div>
-          <h5 className="text-xl font-bold text-white mb-2">
-            {language === "vi" ? "Hành trình trọn vẹn" : "Complete Journey"}
-          </h5>
-          <p className="text-[0.9rem] text-white/40 max-w-md">
+      {isLoading ? (
+        <div className="flex min-h-[240px] items-center justify-center rounded-3xl border border-white/10 bg-white/[0.03]">
+          <Loader2 className="h-8 w-8 animate-spin text-white/60" />
+        </div>
+      ) : filteredRecords.length === 0 ? (
+        <div className="flex min-h-[240px] flex-col items-center justify-center rounded-3xl border border-white/10 bg-white/[0.03] text-center">
+          <History className="mb-4 h-10 w-10 text-white/25" />
+          <h2 className="text-xl font-black">
             {language === "vi"
-              ? "Mọi nốt nhạc bạn từng nghe đều được AI lưu trữ và tối ưu cho những lần gợi ý tiếp theo."
-              : "Every note you've ever heard is archived and optimized for future recommendations."}
+              ? "Chưa có lịch sử nghe"
+              : "No listening history yet"}
+          </h2>
+          <p className="mt-2 max-w-md text-sm text-white/45">
+            {language === "vi"
+              ? "Hãy phát một bài hát ít nhất 5 giây, hệ thống sẽ tự lưu vào database cho tài khoản hiện tại."
+              : "Play a song for at least 5 seconds and it will be saved to this account's database history."}
           </p>
         </div>
-        <button className="px-8 py-3 rounded-full bg-white/5 border border-white/10 text-sm font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-          Export Archive
-        </button>
-      </motion.div>
-    </div>
+      ) : (
+        <div className="space-y-8">
+          {groupedRecords.map(([groupName, items]) => (
+            <section key={groupName}>
+              <h2 className="mb-4 flex items-center gap-3 text-xs font-black uppercase tracking-[0.25em] text-white/35">
+                <Clock3 className="h-4 w-4" />
+                {groupName}
+              </h2>
+
+              <div className="space-y-3">
+                {items.map((record) => {
+                  const emotion = normalizeEmotion(
+                    record.track.mood || record.track.emotion,
+                  );
+
+                  return (
+                    <article
+                      key={record.id}
+                      className={cn(
+                        "group flex items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-3 transition",
+                        "hover:border-white/20 hover:bg-white/[0.07]",
+                      )}
+                    >
+                      <img
+                        src={toImageUrl(record.track.cover_image)}
+                        alt={record.track.title}
+                        className="h-16 w-16 rounded-2xl object-cover"
+                        onError={(event) => {
+                          event.currentTarget.src = "/placeholder.svg";
+                        }}
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-base font-black">
+                          {record.track.title}
+                        </h3>
+
+                        <p className="truncate text-sm text-white/45">
+                          {record.track.artist}
+                        </p>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/35">
+                          <span className="rounded-full bg-white/10 px-3 py-1 font-bold text-white/55">
+                            {getEmotionLabel(emotion, language)}
+                          </span>
+
+                          <span>
+                            {formatHistoryTime(record.created_at, language)}
+                          </span>
+
+                          <span>
+                            {formatDuration(
+                              Math.round(record.track.duration || 0),
+                            )}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handlePlay(record)}
+                        className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-black opacity-90 transition hover:scale-105 hover:opacity-100"
+                        aria-label={
+                          language === "vi" ? "Phát lại" : "Play again"
+                        }
+                      >
+                        <Play className="h-5 w-5 fill-current" />
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+    </main>
   );
 }
