@@ -1,284 +1,458 @@
-'use client';
+"use client";
 
-import { useMemo, useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, ChevronRight, MessageSquareText, Send, Sparkles, Minus, X, Info, AudioLines } from 'lucide-react';
-import { useTheme } from '@/lib/nguCanhGiaoDien';
-import { mockSongs, type Emotion } from '@/lib/duLieuGiaLap';
-import { assistantQuickActions, detectEmotionFromText, localizedLabel } from '@/lib/music-intelligence';
-import { cn } from '@/lib/tienIch';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  AudioLines,
+  Bot,
+  Languages,
+  Loader2,
+  Mic,
+  MicOff,
+  Minus,
+  Music2,
+  Send,
+  Sparkles,
+  X,
+} from "lucide-react";
+
+import { useNhanDangGiongNoi } from "@/hooks/useNhanDangGiongNoi";
+import { mockSongs } from "@/lib/duLieuGiaLap";
+import { useTheme } from "@/lib/nguCanhGiaoDien";
+import {
+  musicBotQuickPrompts,
+  resolveBotMusicCommand,
+} from "@/lib/lenhBotNhac";
+import { cn } from "@/lib/tienIch";
 
 interface AssistantMessage {
   id: string;
-  role: 'assistant' | 'user' | 'system';
+  role: "assistant" | "user" | "system";
   content: string;
 }
 
-const routeMap = {
-  home: '/bangDieuKhien',
-  emotion: '/nhanDienCamXuc',
-  analytics: '/phanTich',
-  space: '/khongGian',
-  recommendations: '/goiY',
-  library: '/thuVien',
-  history: '/lichSu',
-  settings: '/caiDat',
-} as const;
+function makeId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
 
-const emotionNames: Record<Emotion, string> = {
-  happy: 'Vui vẻ',
-  sad: 'Buồn',
-  calm: 'Bình yên',
-  angry: 'Tức giận',
-  romantic: 'Lãng mạn',
-  nostalgic: 'Hoài niệm',
-  energetic: 'Năng động',
-  stressed: 'Căng thẳng',
-};
-
-function firstSongByEmotion(emotion: Emotion) {
-  return mockSongs.find((song) => song.emotion === emotion) ?? mockSongs[0];
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 export function AIAssistantPanel() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { setCurrentEmotion, setNowPlaying, setIsPlaying, currentEmotion, language } = useTheme();
+  const {
+    language,
+    currentEmotion,
+    songs,
+    isLoadingSongs,
+    songError,
+    nowPlaying,
+    setNowPlaying,
+    setIsPlaying,
+    playNext,
+    playPrevious,
+    setVolume,
+    setIsMuted,
+  } = useTheme();
 
-  // States: 'minimized' (the orb launcher), 'expanded' (the chat panel)
-  // We remove 'dismissed' to ensure the launcher is always persistent as requested.
-  const [viewState, setViewState] = useState<'minimized' | 'expanded'>('minimized');
-  const [input, setInput] = useState('');
-  
+  const [viewState, setViewState] = useState<"minimized" | "expanded">(
+    "minimized",
+  );
+  const [input, setInput] = useState("");
   const [messages, setMessages] = useState<AssistantMessage[]>([
     {
-      id: 'intro',
-      role: 'assistant',
-      content: language === 'vi' ? 'Trợ lý KhoaLisa sẵn sàng.' : 'KhoaLisa ready.',
+      id: "intro",
+      role: "assistant",
+      content:
+        language === "vi"
+          ? "KhoaLisa AI sẵn sàng. Bạn có thể nhập hoặc nói để yêu cầu mình phát nhạc theo tên bài, mood, artist hoặc random."
+          : "KhoaLisa AI is ready. You can type or speak to play music by song title, mood, artist, or random.",
     },
   ]);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  const quickActions = useMemo(
-    () =>
-      assistantQuickActions.slice(0, 3).map((item) => ({
-        id: item.id,
-        label: localizedLabel(item.label, language),
-        prompt: localizedLabel(item.prompt, language),
-      })),
-    [language],
-  );
+  const availableSongs = useMemo(() => {
+    return songs.length > 0 ? songs : mockSongs;
+  }, [songs]);
 
-  // Auto-scroll logic
+  const quickActions = useMemo(() => {
+    return musicBotQuickPrompts.map((item) => ({
+      id: item.id,
+      label: item.label[language] ?? item.label.vi,
+      prompt: item.prompt[language] ?? item.prompt.vi,
+    }));
+  }, [language]);
+
   useEffect(() => {
-    if (messagesEndRef.current && viewState === 'expanded') {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (viewState === "expanded") {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, viewState]);
 
-  const respond = (userInput: string) => {
-    const normalized = userInput.toLowerCase();
-    let reply = language === 'vi' ? 'Đã nhận lệnh.' : 'Acknowledged.';
+  const pushConversation = useCallback((userInput: string, reply: string) => {
+    setMessages((prev) =>
+      [
+        ...prev,
+        {
+          id: makeId(),
+          role: "user",
+          content: userInput,
+        },
+        {
+          id: makeId(),
+          role: "assistant",
+          content: reply,
+        },
+      ].slice(-14),
+    );
+  }, []);
 
-    if (normalized.includes('calm') || normalized.includes('diu') || normalized.includes('thu gian')) {
-      const song = firstSongByEmotion('calm');
-      setCurrentEmotion('calm');
-      setNowPlaying(song);
-      setIsPlaying(true);
-      reply = language === 'vi' ? `Sang mode Bình Yên. Chơi thẻ: ${song.title}.` : `Calm mode. Playing: ${song.title}.`;
-    } else if (normalized.includes('voice') || normalized.includes('giong')) {
-      router.push(routeMap.emotion);
-      reply = language === 'vi' ? 'Mở Phân tích Giọng nói.' : 'Opening Voice Analysis.';
-    } else if (normalized.includes('space') || normalized.includes('khong gian')) {
-      router.push(routeMap.space);
-      reply = language === 'vi' ? 'Vào Không Gian Cảm Xúc.' : 'Entering Emotion Space.';
-    } else if (normalized.includes('text') || normalized.includes('mood') || normalized.includes('cam xuc')) {
-      const detectedEmotion = detectEmotionFromText(userInput);
-      const song = firstSongByEmotion(detectedEmotion);
-      setCurrentEmotion(detectedEmotion);
-      setNowPlaying(song);
-      reply = language === 'vi' ? `Nhận dạng: ${emotionNames[detectedEmotion]}.` : `Detected: ${detectedEmotion}.`;
-    } else if (normalized.includes('recommend') || normalized.includes('playlist') || normalized.includes('goi y')) {
-      router.push(routeMap.recommendations);
-      reply = language === 'vi' ? 'Mở Recommendation Intelligence.' : 'Opening Intelligence Dashboard.';
-    } else {
-      reply = language === 'vi' 
-        ? `${language === 'vi' ? 'Trợ lý KhoaLisa' : 'KhoaLisa'} đang ở trạng thái: ${emotionNames[currentEmotion]}.`
-        : `State: ${currentEmotion}.`;
-    }
+  const respond = useCallback(
+    (userInput: string) => {
+      const result = resolveBotMusicCommand(userInput, availableSongs, {
+        language,
+        currentEmotion,
+        nowPlaying,
+      });
 
-    const nextMessages: AssistantMessage[] = [
-      { id: crypto.randomUUID(), role: 'user', content: userInput },
-      { id: crypto.randomUUID(), role: 'assistant', content: reply },
-    ];
+      let reply = result.reply;
 
-    setMessages((prev) => [...prev, ...nextMessages].slice(-10));
-  };
+      if (isLoadingSongs && availableSongs.length === 0) {
+        reply =
+          language === "vi"
+            ? "Mình đang tải danh sách bài hát, thử lại sau vài giây nhé."
+            : "I am still loading songs. Please try again shortly.";
+      }
 
-  const handleSubmit = () => {
+      if (songError && availableSongs.length === mockSongs.length) {
+        reply +=
+          language === "vi"
+            ? " Mình đang dùng dữ liệu mock vì backend chưa trả danh sách bài hát."
+            : " I am using mock data because the backend song list is unavailable.";
+      }
+
+      if (result.type === "play") {
+        setNowPlaying(result.song);
+        setIsPlaying(true);
+      }
+
+      if (result.type === "control") {
+        if (result.control === "pause") {
+          setIsPlaying(false);
+        }
+
+        if (result.control === "resume") {
+          setIsPlaying(true);
+        }
+
+        if (result.control === "next") {
+          playNext();
+        }
+
+        if (result.control === "previous") {
+          playPrevious();
+        }
+      }
+
+      if (result.type === "volume") {
+        setVolume(result.value);
+        setIsMuted(Boolean(result.muted));
+      }
+
+      pushConversation(userInput, reply);
+    },
+    [
+      availableSongs,
+      currentEmotion,
+      isLoadingSongs,
+      language,
+      nowPlaying,
+      playNext,
+      playPrevious,
+      pushConversation,
+      setIsMuted,
+      setIsPlaying,
+      setNowPlaying,
+      setVolume,
+      songError,
+    ],
+  );
+
+  const handleFinalSpeechText = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+
+      setInput(trimmed);
+      respond(trimmed);
+      setInput("");
+    },
+    [respond],
+  );
+
+  const {
+    isSupported: isSpeechSupported,
+    isListening,
+    speechLocale,
+    interimTranscript,
+    error: speechError,
+    toggleListening,
+    toggleSpeechLocale,
+  } = useNhanDangGiongNoi({
+    language,
+    onFinalText: handleFinalSpeechText,
+  });
+
+  const handleSubmit = useCallback(() => {
     const trimmed = input.trim();
     if (!trimmed) return;
+
     respond(trimmed);
-    setInput('');
-  };
+    setInput("");
+  }, [input, respond]);
 
   return (
-    <div className="fixed bottom-10 right-4 z-[999] flex flex-col items-end gap-4 md:right-10">
-      
+    <div className="fixed bottom-28 right-5 z-[90] md:bottom-24 md:right-8">
       <AnimatePresence mode="wait">
-        
-        {/* ================================================================= */}
-        {/* 1. CHAT PANEL (EXPANDED STATE)                                   */}
-        {/* ================================================================= */}
-        {viewState === 'expanded' && (
+        {viewState === "expanded" ? (
           <motion.div
-            key="panel"
-            initial={{ opacity: 0, y: 30, scale: 0.9, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: 40, scale: 0.8, filter: 'blur(20px)', transition: { duration: 0.25, ease: 'easeInOut' } }}
-            transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-            className="relative flex flex-col overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#06080a]/95 backdrop-blur-3xl shadow-[0_40px_100px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)] w-[20rem] md:w-[23rem] h-[32rem] origin-bottom-right"
+            key="assistant-panel"
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 24, scale: 0.96 }}
+            transition={{ duration: 0.18 }}
+            className="w-[min(92vw,24rem)] overflow-hidden rounded-[2rem] border border-white/10 bg-black/85 text-white shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl"
           >
-            {/* COMPACT CLEAN HEADER */}
-            <header className="flex flex-none items-center justify-between px-6 py-5 border-b border-white/[0.05]">
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
               <div className="flex items-center gap-3">
-                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--brand-accent)]/10 text-[var(--brand-accent)] shadow-[0_0_15px_rgba(30,215,96,0.1)]">
-                    <Bot className="h-4 w-4" />
-                 </div>
-                 <h3 className="text-[0.75rem] font-black uppercase tracking-[0.2em] text-white">KhoaLisa AI</h3>
-              </div>
-              <button 
-                onClick={() => setViewState('minimized')}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white/30 hover:text-white hover:bg-white/10 transition-all active:scale-90"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </header>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
+                  <Bot className="h-5 w-5" />
+                </div>
 
-            {/* MESSAGES FLOW */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide flex flex-col gap-4">
-              <div className="mx-auto flex items-center gap-2 mb-4 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.02]">
-                 <span className="text-[0.6rem] uppercase tracking-[0.2em] text-white/40 truncate max-w-[120px]">{pathname}</span>
-                 <span className="h-1 w-1 rounded-full bg-white/20" />
-                 <span className="text-[0.6rem] uppercase tracking-[0.2em] text-[var(--brand-accent)] font-bold">{currentEmotion}</span>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-[0.18em]">
+                    KhoaLisa AI
+                  </h3>
+
+                  <p className="text-[0.68rem] text-white/45">
+                    {isLoadingSongs
+                      ? language === "vi"
+                        ? "Đang tải thư viện nhạc..."
+                        : "Loading library..."
+                      : nowPlaying
+                        ? `${nowPlaying.title} · ${nowPlaying.artist}`
+                        : language === "vi"
+                          ? "Điều khiển trình phát nhạc"
+                          : "Music player control"}
+                  </p>
+                </div>
               </div>
 
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, x: message.role === 'user' ? 10 : -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className={cn('flex w-full', message.role === 'user' ? 'justify-end' : 'justify-start')}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setViewState("minimized")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white/40 transition hover:bg-white/10 hover:text-white"
+                  aria-label="Minimize assistant"
                 >
-                  <div
-                    className={cn(
-                      'max-w-[85%] rounded-2xl px-4 py-2.5 text-[0.8rem] leading-relaxed shadow-sm transition-all',
-                      message.role === 'assistant'
-                        ? 'bg-white/[0.03] border border-white/[0.05] text-white/70 rounded-tl-sm'
-                        : 'bg-[var(--brand-accent)] text-black font-semibold shadow-[0_10px_20px_rgba(30,215,96,0.15)] rounded-tr-sm',
-                    )}
-                  >
-                    <p className="tracking-wide select-none">{message.content}</p>
-                  </div>
-                </motion.div>
+                  <Minus className="h-4 w-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewState("minimized")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white/40 transition hover:bg-white/10 hover:text-white"
+                  aria-label="Close assistant"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[22rem] space-y-3 overflow-y-auto px-4 py-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                    message.role === "user"
+                      ? "ml-auto bg-white text-black"
+                      : "mr-auto border border-white/10 bg-white/[0.06] text-white/85",
+                  )}
+                >
+                  {message.content}
+                </div>
               ))}
-              <div ref={messagesEndRef} className="h-4" />
+
+              <div ref={messagesEndRef} />
             </div>
 
-            {/* COMPOSER (PILL STYLE) */}
-            <div className="flex-none px-6 pb-6 pt-2 bg-gradient-to-t from-[#06080a] to-transparent">
-               <div className="mb-4 flex flex-wrap gap-2">
-                 {quickActions.map((action) => (
-                   <button
-                     key={action.id}
-                     onClick={() => respond(action.prompt)}
-                     className="flex items-center gap-1.5 rounded-full border border-white/5 bg-white/[0.02] px-3 py-1.5 text-[0.62rem] uppercase tracking-widest font-black text-white/30 transition-all hover:bg-white/10 hover:text-white"
-                   >
-                     <ChevronRight className="h-2.5 w-2.5" />
-                     {action.label}
-                   </button>
-                 ))}
-               </div>
-
-               <div className="group flex items-center gap-2 rounded-full border border-white/10 bg-black/50 p-1.5 focus-within:border-white/30 focus-within:bg-black shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] transition-all">
-                  <input
-                    value={input}
-                    onChange={(event) => setInput(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                         event.preventDefault();
-                         handleSubmit();
-                      }
-                    }}
-                    placeholder={language === 'vi' ? 'Nhập yêu cầu...' : 'Command...'}
-                    className="w-full bg-transparent px-4 text-[0.85rem] text-white placeholder:text-white/20 outline-none font-medium"
-                    autoComplete="off"
-                  />
+            <div className="border-t border-white/10 px-4 py-3">
+              <div className="mb-3 flex flex-wrap gap-2">
+                {quickActions.map((action) => (
                   <button
-                    onClick={handleSubmit}
-                    disabled={!input.trim()}
-                    className={cn(
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all duration-300",
-                      input.trim() 
-                        ? "bg-[var(--brand-accent)] text-black hover:scale-105 shadow-[0_0_20px_rgba(30,215,96,0.3)]" 
-                        : "bg-white/5 text-white/10 pointer-events-none"
-                    )}
+                    key={action.id}
+                    type="button"
+                    onClick={() => respond(action.prompt)}
+                    className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[0.65rem] font-black uppercase tracking-widest text-white/45 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
                   >
-                    <Send className="h-4 w-4 ml-0.5" />
+                    {action.label}
                   </button>
-               </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-2 py-2">
+                <Sparkles className="ml-2 h-4 w-4 shrink-0 text-white/35" />
+
+                <input
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
+                  placeholder={
+                    language === "vi"
+                      ? "Nói hoặc nhập: mở bài Lemon Tree..."
+                      : "Speak or type: play Lemon Tree..."
+                  }
+                  className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/25"
+                  autoComplete="off"
+                />
+
+                <button
+                  type="button"
+                  onClick={toggleSpeechLocale}
+                  className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.05] px-2 text-[0.62rem] font-black text-white/55 transition hover:bg-white/10 hover:text-white"
+                  title={
+                    language === "vi"
+                      ? "Đổi ngôn ngữ ghi âm Việt/Anh"
+                      : "Switch voice language Vietnamese/English"
+                  }
+                  aria-label={
+                    language === "vi"
+                      ? "Đổi ngôn ngữ ghi âm"
+                      : "Switch speech language"
+                  }
+                >
+                  <Languages className="h-3.5 w-3.5" />
+                  {speechLocale === "vi-VN" ? "VI" : "EN"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  disabled={!isSpeechSupported}
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition active:scale-95",
+                    isListening
+                      ? "border-red-300/40 bg-red-500/20 text-red-100"
+                      : "border-white/10 bg-white/[0.05] text-white/55 hover:bg-white/10 hover:text-white",
+                    !isSpeechSupported && "cursor-not-allowed opacity-40",
+                  )}
+                  title={
+                    !isSpeechSupported
+                      ? "Trình duyệt chưa hỗ trợ nhận diện giọng nói"
+                      : isListening
+                        ? "Dừng ghi âm"
+                        : "Bấm để nói"
+                  }
+                  aria-label={
+                    isListening
+                      ? language === "vi"
+                        ? "Dừng ghi âm"
+                        : "Stop recording"
+                      : language === "vi"
+                        ? "Bắt đầu ghi âm"
+                        : "Start recording"
+                  }
+                >
+                  {isListening ? (
+                    <MicOff className="h-4 w-4" />
+                  ) : (
+                    <Mic className="h-4 w-4" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-black transition hover:scale-105 active:scale-95"
+                  aria-label="Send command"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+
+              {isListening && (
+                <p className="mt-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/50">
+                  {language === "vi" ? "Đang nghe" : "Listening"}
+                  {interimTranscript ? `: ${interimTranscript}` : "..."}
+                </p>
+              )}
+
+              {speechError && (
+                <p className="mt-2 rounded-2xl border border-red-300/20 bg-red-500/10 px-3 py-2 text-xs text-red-100/80">
+                  {speechError}
+                </p>
+              )}
+
+              {!isSpeechSupported && (
+                <p className="mt-2 rounded-2xl border border-yellow-300/20 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-100/80">
+                  {language === "vi"
+                    ? "Trình duyệt này chưa hỗ trợ nhận diện giọng nói. Hãy thử Chrome hoặc Edge."
+                    : "This browser does not support speech recognition. Try Chrome or Edge."}
+                </p>
+              )}
+
+              <div className="mt-2 flex items-center gap-2 px-2 text-[0.68rem] text-white/35">
+                {isLoadingSongs ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Music2 className="h-3.5 w-3.5" />
+                )}
+
+                <span>
+                  {language === "vi"
+                    ? `${availableSongs.length} bài có thể phát`
+                    : `${availableSongs.length} playable songs`}
+                </span>
+
+                <span className="ml-auto rounded-full border border-white/10 px-2 py-0.5 text-[0.6rem] font-black uppercase tracking-widest text-white/30">
+                  {speechLocale === "vi-VN" ? "Voice VI" : "Voice EN"}
+                </span>
+              </div>
             </div>
           </motion.div>
-        )}
-
-        {/* ================================================================= */}
-        {/* 2. FLOATING ORB LAUNCHER (MINIMIZED STATE)                       */}
-        {/* ================================================================= */}
-        {viewState === 'minimized' && (
-          <motion.div
-            key="launcher"
-            initial={{ opacity: 0, scale: 0.5, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 1.2, filter: 'blur(10px)', transition: { duration: 0.2 } }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="group relative"
+        ) : (
+          <motion.button
+            key="assistant-orb"
+            type="button"
+            onClick={() => setViewState("expanded")}
+            initial={{ opacity: 0, y: 18, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 18, scale: 0.92 }}
+            transition={{ duration: 0.18 }}
+            className="relative flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-full border border-white/10 bg-black/80 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.05)] transition-all hover:scale-110 hover:border-white/20 hover:bg-black active:scale-95"
+            aria-label="Open KhoaLisa AI assistant"
           >
-            {/* Subtle Outer Glow */}
-            <div className="absolute inset-0 rounded-full bg-[var(--brand-accent)]/20 blur-[15px] opacity-0 group-hover:opacity-100 transition-opacity" />
-            
-            {/* The Simple Circular Chat Bubble Launcher */}
-            <button
-               onClick={() => setViewState('expanded')}
-               className="relative flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-full border border-white/10 bg-black/80 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.05)] transition-all hover:bg-black hover:border-white/20 hover:scale-110 active:scale-95"
-            >
-               <div className="relative flex h-12 w-12 items-center justify-center rounded-full overflow-hidden">
-                  <Image
-                    src="/img/logo/logochatbox.png"
-                    alt="KhoaLisa AI"
-                    width={40}
-                    height={40}
-                    className="object-contain transition-transform duration-700 group-hover:rotate-12 rounded-full"
-                  />
-                  {/* Status Indicator */}
-                  <span className="absolute bottom-1 right-1 flex h-2.5 w-2.5 items-center justify-center">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--brand-accent)] opacity-40"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--brand-accent)] shadow-[0_0_8px_var(--brand-accent)]"></span>
-                  </span>
-               </div>
-            </button>
-          </motion.div>
+            <span className="absolute inset-0 rounded-full bg-white/5 blur-xl" />
+
+            <Bot className="relative h-7 w-7 text-white" />
+
+            {nowPlaying ? (
+              <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-black bg-emerald-400">
+                <AudioLines className="h-3 w-3 text-black" />
+              </span>
+            ) : (
+              <span className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full border border-black bg-white/40" />
+            )}
+          </motion.button>
         )}
-
       </AnimatePresence>
-
-      <style dangerouslySetInnerHTML={{__html: `
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-      `}} />
     </div>
   );
 }

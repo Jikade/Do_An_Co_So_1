@@ -26,6 +26,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me}
       JWT_ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 1440
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-902323570724-9g2bfdup36hc7bkhigel5dugp9mu7haf.apps.googleusercontent.com}
       ML_SERVICE_URL: http://ml:8001
       REQUEST_TIMEOUT_SECONDS: 10
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
@@ -46,6 +47,7 @@ services:
     environment:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
       API_INTERNAL_BASE_URL: http://api:8000
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-902323570724-9g2bfdup36hc7bkhigel5dugp9mu7haf.apps.googleusercontent.com}
     ports:
       - "3000:3000"
     volumes:
