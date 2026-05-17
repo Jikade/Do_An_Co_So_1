@@ -24,14 +24,20 @@ export default async function ThuVienPage() {
           </p>
 
           <h1 className="mt-2 text-3xl font-black text-white md:text-5xl">
-            Không gian nghe của cậu
+            Bài hát đã thích
           </h1>
+
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/50">
+            Chỉ hiển thị những bài hát bạn đã nhấn thích. Mỗi tài khoản sẽ có
+            danh sách yêu thích riêng.
+          </p>
         </div>
       </div>
 
       <FilteredSongGrid
         songs={songs}
-        emptyMessage="Không có bài hát nào phù hợp với bộ lọc hiện tại."
+        forceLikedOnly
+        emptyMessage="Bạn chưa thích bài hát nào. Hãy nhấn tim ở bài hát để thêm vào thư viện."
       />
     </main>
   );

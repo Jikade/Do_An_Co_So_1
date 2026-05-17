@@ -9,6 +9,7 @@ import { useTheme } from "@/lib/nguCanhGiaoDien";
 type FilteredSongGridProps = {
   songs: Song[];
   emptyMessage?: string;
+  forceLikedOnly?: boolean;
 };
 
 function normalizeText(value?: string | null) {
@@ -28,8 +29,17 @@ function normalizeMood(value?: string | null) {
 export function FilteredSongGrid({
   songs,
   emptyMessage = "Không có bài hát nào phù hợp với bộ lọc.",
+  forceLikedOnly = false,
 }: FilteredSongGridProps) {
-  const { songSearchQuery, moodFilter, likedOnly, isTrackLiked } = useTheme();
+  const {
+    songSearchQuery,
+    moodFilter,
+    likedOnly,
+    isLoadingLikes,
+    isTrackLiked,
+  } = useTheme();
+
+  const shouldShowLikedOnly = forceLikedOnly || likedOnly;
 
   const filteredSongs = useMemo(() => {
     const keyword = normalizeText(songSearchQuery);
@@ -50,11 +60,19 @@ export function FilteredSongGrid({
 
       const matchesMood = selectedMood === "all" || mood === selectedMood;
 
-      const matchesLiked = !likedOnly || isTrackLiked(song.id);
+      const matchesLiked = !shouldShowLikedOnly || isTrackLiked(song.id);
 
       return matchesKeyword && matchesMood && matchesLiked;
     });
-  }, [songs, songSearchQuery, moodFilter, likedOnly, isTrackLiked]);
+  }, [songs, songSearchQuery, moodFilter, shouldShowLikedOnly, isTrackLiked]);
+
+  if (forceLikedOnly && isLoadingLikes) {
+    return (
+      <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center text-white/50">
+        Đang tải danh sách bài hát đã thích...
+      </div>
+    );
+  }
 
   if (filteredSongs.length === 0) {
     return (
@@ -66,13 +84,14 @@ export function FilteredSongGrid({
 
   return (
     <div className="space-y-4">
-      {songSearchQuery || moodFilter !== "all" || likedOnly ? (
+      {songSearchQuery || moodFilter !== "all" || shouldShowLikedOnly ? (
         <p className="text-sm text-white/45">
           Đang hiển thị{" "}
           <span className="font-semibold text-white/80">
             {filteredSongs.length}
           </span>{" "}
-          / {songs.length} bài hát phù hợp với bộ lọc.
+          / {songs.length} bài hát
+          {shouldShowLikedOnly ? " đã thích" : " phù hợp với bộ lọc"}.
         </p>
       ) : null}
 
